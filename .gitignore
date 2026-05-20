@@ -1,6 +1,9 @@
-# Ignore everything in the data directory, but keep the directory itself
-/data/*
-!/data/
-/logs/*
-!/logs/
+# Local runtime data
+data/*
+!data/.gitkeep
+
+# Local runtime logs
+logs/*
+!logs/.gitkeep
+
 .node-server.pid
