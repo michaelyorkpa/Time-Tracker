@@ -1,6 +1,6 @@
 # Ignore everything in the data directory, but keep the directory itself
+/data/*
 !/data/
-/data/* 
-!/logs/
 /logs/*
+!/logs/
 .node-server.pid
