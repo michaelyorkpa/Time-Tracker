@@ -33,14 +33,18 @@
     - [ ] Chart showing previous month versus current month billables
 
 ## Phase Three
+- [ ] Migrate to SQLite database
 - [ ] Add users and full login with passwords
 - [ ] Add roles
     - [ ] Administrator
     - [ ] Client Administrator
     - [ ] Project Administrator
     - [ ] User
-        - [ ] Add ability to assign each to a specific client/project
-- [ ] Migrate to SQLite database
+    - [ ] Add ability to assign each to a specific client/project, as appropriate
+- [ ] Add tasks
+    - [ ] Tasks are assignable to Clients & Projects
+    - [ ] Add personal task list functionality as unique client
+    - [ ] Give tasks reminders, due dates, recurrence
 - [ ] Two Factor Authentication (TOTP)
 - [ ] Passkeys
 - [ ] SSO
