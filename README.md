@@ -23,15 +23,14 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
 ## Early Release Roadmap
 
 ### Phase 1 - Version 0.1
-  - [x] Single codebase
+- [x] Single codebase
     - [x] Time tracking
     - [x] Clients
     - [x] Projects
-  - [x] SQLite
-  - [x] One default workspace
-  - [x] Users
-  - [ ] Roles
-  - [ ] Docker-friendly config
+- [x] SQLite
+- [x] One default workspace
+- [x] Users
+- [ ] Roles
 
 ### Phase 2 - Version 0.2
   - [ ] Add organiztion_id everywhere
@@ -44,19 +43,19 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
   - [ ] Calendars
 
 ### Phase 3 - Version 0.3
-  - [ ] Self-hosted release
-  - [ ] Docker Compose
-  - [ ] Setup wizard
-  - [ ] Admin docs
-  - [ ] Expand Project Management
+- [ ] Docker Compose
+- [ ] Setup wizard
+- [ ] Admin docs
+- [ ] Self-hosted release
+- [ ] Expand Project Management Tools
 
 ### Phase 4 - Version 0.4
-  - [ ] SaaS wrapper
-  - [ ] hosted PostgreSQL
-  - [ ] tenant signup
-  - [ ] billing
-  - [ ] email delivery
-  - [ ] monitoring
+- [ ] SaaS wrapper
+- [ ] hosted PostgreSQL
+- [ ] tenant signup
+- [ ] billing
+- [ ] email delivery
+- [ ] monitoring
 
 ## Version-Specific Updates
 
