@@ -18,7 +18,10 @@ loadEntryClients();
 
 entryClientSelect.addEventListener("change", () => {
   populateProjectOptions();
+  updateBillableDefault();
 });
+
+entryProjectSelect.addEventListener("change", updateBillableDefault);
 
 manualEntryForm.addEventListener("reset", () => {
   window.setTimeout(() => {
@@ -73,6 +76,8 @@ function populateProjectOptions() {
   sortByName(client.projects).forEach((project) => {
     entryProjectSelect.appendChild(createOption(project.id, project.name));
   });
+
+  updateBillableDefault();
 }
 
 async function saveManualEntry() {
@@ -148,10 +153,12 @@ function normalizeClients(data) {
     ? data.clients.map((client) => ({
         id: String(client.id || "").trim(),
         name: String(client.name || "").trim(),
+        billable: normalizeBillableFlag(client.billable),
         projects: Array.isArray(client.projects)
           ? client.projects.map((project) => ({
               id: String(project.id || "").trim(),
               name: String(project.name || "").trim(),
+              billable: normalizeBillableFlag(project.billable, client.billable),
             }))
           : [],
       }))
@@ -164,6 +171,23 @@ function getSelectedClient() {
 
 function getSelectedProject(client) {
   return client?.projects.find((project) => project.id === entryProjectSelect.value);
+}
+
+function updateBillableDefault() {
+  const project = getSelectedProject(getSelectedClient());
+  entryBillableSelect.value = project?.billable === "no" ? "no" : "yes";
+}
+
+function normalizeBillableFlag(value, fallback = "yes") {
+  if (value === false || value === "no") {
+    return "no";
+  }
+
+  if (value === true || value === "yes") {
+    return "yes";
+  }
+
+  return fallback === "no" ? "no" : "yes";
 }
 
 function createLocalDateTime(dateValue, timeValue) {

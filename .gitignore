@@ -1,3 +1,6 @@
+# Don't upload the PID file for the node server
+.node-server.pid
+
 # Local runtime data
 data/*
 !data/.gitkeep
@@ -9,4 +12,5 @@ logs/*
 # Archived local data
 archive/
 
-.node-server.pid
+# Ignore the logo concepts image file
+images/logo-concepts.png

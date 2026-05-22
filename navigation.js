@@ -14,9 +14,10 @@ const NAV_ITEMS = [
   {
     label: "Settings",
     items: [
-      { label: "Projects & Clients", href: "clients-projects.html" },
-      { label: "Organization Settings", href: "organization-settings.html" },
-      { label: "User Settings", href: "user-settings.html" },      
+      { label: "Projects", href: "projects.html" },
+      { label: "Clients", href: "clients.html" },
+      { label: "Organization", href: "organization-settings.html" },
+      { label: "User", href: "user-settings.html" },
     ],
   },
 ];
@@ -181,6 +182,7 @@ async function logOut() {
       method: "POST",
     });
   } finally {
+    window.localStorage.removeItem("lf_theme");
     window.location.replace("/login.html");
   }
 }

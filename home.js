@@ -118,7 +118,7 @@ function renderBillablesChart() {
   const months = getTrailingMonths(12);
   const points = months.map((monthStart) => {
     const range = getMonthRange(monthStart);
-    const totals = getClientBillablesForRange(range).reduce((summary, row) => ({
+    const totals = getClientHoursAndBillablesForRange(range).reduce((summary, row) => ({
       seconds: summary.seconds + row.seconds,
       amount: summary.amount + row.amount,
     }), { seconds: 0, amount: 0 });
@@ -134,38 +134,51 @@ function renderBillablesChart() {
 }
 
 function getClientBillablesForRange(range) {
+  return getClientHoursAndBillablesForRange(range)
+    .map((row) => ({
+      ...row,
+      seconds: row.billableSeconds,
+    }));
+}
+
+function getClientHoursAndBillablesForRange(range) {
   return sortByName(homeClients)
     .filter((client) => client.status === "Active")
     .map((client) => {
       const clientEntries = homeEntries.filter((entry) =>
-        entry.billable === "yes" &&
         matchesClient(entry, client) &&
         isEntryInRange(entry, range),
       );
       const projects = getReportProjects(client);
       let seconds = 0;
+      let billableSeconds = 0;
       let amount = 0;
 
       projects.forEach((project) => {
-        const projectSeconds = clientEntries
-          .filter((entry) => matchesProject(entry, project))
+        const projectEntries = clientEntries
+          .filter((entry) => matchesProject(entry, project));
+        const projectSeconds = projectEntries
+          .reduce((total, entry) => total + entry.durationSeconds, 0);
+        const projectBillableSeconds = projectEntries
+          .filter((entry) => entry.billable === "yes")
           .reduce((total, entry) => total + entry.durationSeconds, 0);
 
         if (projectSeconds === 0) {
           return;
         }
 
-        const roundedSeconds = roundSeconds(
-          projectSeconds,
+        const roundedBillableSeconds = roundSeconds(
+          projectBillableSeconds,
           getEffectiveProjectBillingRounding(client, project),
         );
         const rate = getProjectBillingRate(client, project);
 
-        seconds += roundedSeconds;
-        amount += (roundedSeconds / 3600) * rate;
+        seconds += projectSeconds;
+        billableSeconds += roundedBillableSeconds;
+        amount += (roundedBillableSeconds / 3600) * rate;
       });
 
-      return { client, seconds, amount };
+      return { client, seconds, billableSeconds, amount };
     });
 }
 
@@ -201,7 +214,7 @@ function createBillablesSvg(points) {
   }).join("");
 
   return `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Hours and billable amount by month">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Hours and billables by month">
       <line class="chart-axis" x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartHeight}"></line>
       <line class="chart-axis" x1="${width - padding.right}" y1="${padding.top}" x2="${width - padding.right}" y2="${padding.top + chartHeight}"></line>
       <line class="chart-axis" x1="${padding.left}" y1="${padding.top + chartHeight}" x2="${width - padding.right}" y2="${padding.top + chartHeight}"></line>

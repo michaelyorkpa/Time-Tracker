@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   organization_id TEXT NOT NULL,
   username TEXT NOT NULL,
   password TEXT NOT NULL,
+  theme_mode TEXT NOT NULL DEFAULT 'light',
   PRIMARY KEY (organization_id, user_id),
   UNIQUE (organization_id, username),
   FOREIGN KEY (organization_id) REFERENCES organizations(id)
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS clients (
   organization_id TEXT NOT NULL,
   name TEXT NOT NULL,
   status TEXT NOT NULL,
+  billable TEXT NOT NULL DEFAULT 'yes',
   billing_rate TEXT,
   billing_period_type TEXT,
   billing_period_start_day INTEGER,
@@ -63,6 +65,7 @@ CREATE TABLE IF NOT EXISTS projects (
   client_id TEXT NOT NULL,
   name TEXT NOT NULL,
   status TEXT NOT NULL,
+  billable TEXT NOT NULL DEFAULT 'yes',
   billing_rate TEXT,
   billing_period_type TEXT,
   billing_period_start_day INTEGER,

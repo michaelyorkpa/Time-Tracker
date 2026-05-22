@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Time Tracker | Longtail Forge</title>
+    <script src="theme-init.js"></script>
     <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
   </head>
   <body data-title-mode="app">
@@ -16,6 +17,7 @@
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
+            <option value="4">4</option>
           </select>
         </label>
       </div>
@@ -58,6 +60,10 @@
           <label class="reset-option">
             <input type="checkbox" data-stopwatch-clear-on-reset>
             Clear Info when Reset
+          </label>
+          <label class="reset-option">
+            <input type="checkbox" data-stopwatch-billable checked>
+            Billable?
           </label>
           <p data-stopwatch-status role="status" aria-live="polite"></p>
         </section>

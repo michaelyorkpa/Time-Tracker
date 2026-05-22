@@ -20,6 +20,7 @@ const DEFAULT_ORGANIZATION_NAME = "Raymond Tec";
 const DEFAULT_SUPER_ADMIN_USERNAME = "sadmin";
 const SUPER_ADMIN_PASSWORD_ENV = "SUPER_ADMIN_PASSWORD";
 const SESSION_COOKIE_NAME = "time_tracker_session";
+const THEME_COOKIE_NAME = "lf_theme";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 const sessions = new Map();
 // App event logs remain CSV for easy inspection while app data lives in SQLite.
@@ -97,6 +98,16 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "GET" && pathname === "/api/user/settings") {
+      await handleUserSettingsRead(response, session);
+      return;
+    }
+
+    if (request.method === "PUT" && pathname === "/api/user/settings") {
+      await handleUserSettingsSave(request, response, session);
+      return;
+    }
+
     if (request.method === "PUT" && pathname === "/api/user/password") {
       await handlePasswordChange(request, response, session);
       return;
@@ -156,12 +167,16 @@ async function handleLogin(request, response) {
     username: user.username,
   });
 
-  response.setHeader("Set-Cookie", buildSessionCookie(sessionId, SESSION_MAX_AGE_SECONDS));
+  response.setHeader("Set-Cookie", [
+    buildSessionCookie(sessionId, SESSION_MAX_AGE_SECONDS),
+    buildThemeCookie(user.theme_mode),
+  ]);
   sendJson(response, 200, {
     user: {
       organization_id: user.organization_id,
       user_id: user.user_id,
       username: user.username,
+      themeMode: normalizeThemeMode(user.theme_mode),
     },
   });
 }
@@ -173,7 +188,10 @@ async function handleLogout(request, response) {
     sessions.delete(sessionId);
   }
 
-  response.setHeader("Set-Cookie", buildExpiredSessionCookie());
+  response.setHeader("Set-Cookie", [
+    buildExpiredSessionCookie(),
+    buildExpiredThemeCookie(),
+  ]);
   sendJson(response, 200, { ok: true });
 }
 
@@ -192,6 +210,28 @@ async function handleSessionRead(request, response) {
       username: session.username,
     },
   });
+}
+
+async function handleUserSettingsRead(response, session) {
+  const user = await readUserById(session.organization_id, session.user_id);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  const themeMode = normalizeThemeMode(user.theme_mode);
+  response.setHeader("Set-Cookie", buildThemeCookie(themeMode));
+  sendJson(response, 200, { themeMode });
+}
+
+async function handleUserSettingsSave(request, response, session) {
+  const payload = await readJsonBody(request);
+  const themeMode = normalizeThemeMode(payload.themeMode);
+
+  await updateUserThemeMode(session.organization_id, session.user_id, themeMode);
+  response.setHeader("Set-Cookie", buildThemeCookie(themeMode));
+  sendJson(response, 200, { themeMode });
 }
 
 async function handlePasswordChange(request, response, session) {
@@ -372,6 +412,7 @@ CREATE TABLE IF NOT EXISTS users (
   organization_id TEXT NOT NULL,
   username TEXT NOT NULL,
   password TEXT NOT NULL,
+  theme_mode TEXT NOT NULL DEFAULT 'light',
   PRIMARY KEY (organization_id, user_id),
   UNIQUE (organization_id, username),
   FOREIGN KEY (organization_id) REFERENCES organizations(id)
@@ -381,6 +422,7 @@ CREATE TABLE IF NOT EXISTS clients (
   organization_id TEXT NOT NULL,
   name TEXT NOT NULL,
   status TEXT NOT NULL,
+  billable TEXT NOT NULL DEFAULT 'yes',
   billing_rate TEXT,
   billing_period_type TEXT,
   billing_period_start_day INTEGER,
@@ -408,6 +450,7 @@ CREATE TABLE IF NOT EXISTS projects (
   client_id TEXT NOT NULL,
   name TEXT NOT NULL,
   status TEXT NOT NULL,
+  billable TEXT NOT NULL DEFAULT 'yes',
   billing_rate TEXT,
   billing_period_type TEXT,
   billing_period_start_day INTEGER,
@@ -440,6 +483,10 @@ CREATE TABLE IF NOT EXISTS time_entries (
   FOREIGN KEY (organization_id) REFERENCES organizations(id)
 );
 `);
+
+  await ensureColumnExists("clients", "billable", "TEXT NOT NULL DEFAULT 'yes'");
+  await ensureColumnExists("projects", "billable", "TEXT NOT NULL DEFAULT 'yes'");
+  await ensureColumnExists("users", "theme_mode", "TEXT NOT NULL DEFAULT 'light'");
 
   const organizations = await querySql("SELECT id FROM organizations ORDER BY created_at LIMIT 1;");
   let organizationId = "";
@@ -670,6 +717,7 @@ SELECT
   id,
   name,
   status,
+  billable,
   billing_rate,
   billing_period_type,
   billing_period_start_day,
@@ -696,6 +744,7 @@ SELECT
   client_id,
   name,
   status,
+  billable,
   billing_rate,
   billing_period_type,
   billing_period_start_day,
@@ -969,7 +1018,8 @@ SELECT
   user_id,
   organization_id,
   username,
-  password
+  password,
+  theme_mode
 FROM users
 WHERE username = ${sqlText(username)}
 ORDER BY username
@@ -986,7 +1036,8 @@ SELECT
   user_id,
   organization_id,
   username,
-  password
+  password,
+  theme_mode
 FROM users
 WHERE organization_id = ${sqlText(organizationId)}
   AND user_id = ${sqlText(userId)}
@@ -1005,6 +1056,15 @@ WHERE organization_id = ${sqlText(organizationId)}
 `);
 }
 
+async function updateUserThemeMode(organizationId, userId, themeMode) {
+  await runSql(`
+UPDATE users
+SET theme_mode = ${sqlText(normalizeThemeMode(themeMode))}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND user_id = ${sqlText(userId)};
+`);
+}
+
 function createClientInsertSql(organizationId, client, now) {
   const contact = normalizeBillingContact(client.billing_contact);
 
@@ -1014,6 +1074,7 @@ INSERT INTO clients (
   organization_id,
   name,
   status,
+  billable,
   billing_rate,
   billing_period_type,
   billing_period_start_day,
@@ -1038,6 +1099,7 @@ VALUES (
   ${sqlText(organizationId)},
   ${sqlText(client.name)},
   ${sqlText(client.status)},
+  ${sqlText(client.billable)},
   ${sqlNullableText(client.billing_rate)},
   ${sqlNullableText(client.billing_period?.type)},
   ${sqlNullableInteger(client.billing_period?.startDay)},
@@ -1067,6 +1129,7 @@ INSERT INTO projects (
   client_id,
   name,
   status,
+  billable,
   billing_rate,
   billing_period_type,
   billing_period_start_day,
@@ -1081,6 +1144,7 @@ VALUES (
   ${sqlText(clientId)},
   ${sqlText(project.name)},
   ${sqlText(project.status)},
+  ${sqlText(project.billable)},
   ${sqlNullableText(project.billing_rate)},
   ${sqlNullableText(project.billing_period?.type)},
   ${sqlNullableInteger(project.billing_period?.startDay)},
@@ -1096,6 +1160,7 @@ function clientRowToAppClient(row) {
     id: row.id,
     name: row.name,
     status: row.status,
+    billable: normalizeBillableFlag(row.billable),
     billing_rate: normalizeBillingRate(row.billing_rate),
     billing_period: billingPeriodRowToAppValue(row),
     billing_rounding: billingRoundingRowToAppValue(row),
@@ -1119,6 +1184,7 @@ function projectRowToAppProject(row) {
   return {
     id: row.id,
     name: row.name,
+    billable: normalizeBillableFlag(row.billable),
     billing_rate: normalizeBillingRate(row.billing_rate),
     billing_period: billingPeriodRowToAppValue(row),
     billing_rounding: billingRoundingRowToAppValue(row),
@@ -1197,6 +1263,16 @@ function querySql(sql) {
       }
     });
   });
+}
+
+async function ensureColumnExists(tableName, columnName, columnDefinition) {
+  const columns = await querySql(`PRAGMA table_info(${tableName});`);
+
+  if (columns.some((column) => column.name === columnName)) {
+    return;
+  }
+
+  await runSql(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`);
 }
 
 function sqlText(value) {
@@ -1285,6 +1361,7 @@ function isLoginAssetPath(pathname) {
     pathname === "/login.html" ||
     pathname === "/footer.js" ||
     pathname === "/login.js" ||
+    pathname === "/theme-init.js" ||
     pathname === "/styles/longtail-forge.css"
   );
 }
@@ -1495,25 +1572,31 @@ function normalizeClientProjectData(data) {
   const clients = Array.isArray(data?.clients) ? data.clients : [];
 
   return {
-    clients: clients.map((client) => ({
-      id: String(client.id || "").trim(),
-      name: String(client.name || "").trim(),
-      status: normalizeClientStatus(client.status),
-      billing_rate: normalizeBillingRate(client.billing_rate),
-      billing_period: normalizeOptionalBillingPeriod(client.billing_period),
-      billing_rounding: normalizeOptionalBillingRounding(client.billing_rounding),
-      billing_contact: normalizeBillingContact(client.billing_contact),
-      projects: Array.isArray(client.projects)
-        ? client.projects.map((project) => ({
-            id: String(project.id || "").trim(),
-            name: String(project.name || "").trim(),
-            billing_rate: normalizeBillingRate(project.billing_rate),
-            billing_period: normalizeOptionalBillingPeriod(project.billing_period),
-            billing_rounding: normalizeOptionalBillingRounding(project.billing_rounding),
-            status: normalizeStatus(project.status),
-          }))
-        : [],
-    })),
+    clients: clients.map((client) => {
+      const clientBillable = normalizeBillableFlag(client.billable);
+
+      return {
+        id: String(client.id || "").trim(),
+        name: String(client.name || "").trim(),
+        status: normalizeClientStatus(client.status),
+        billable: clientBillable,
+        billing_rate: normalizeBillingRate(client.billing_rate),
+        billing_period: normalizeOptionalBillingPeriod(client.billing_period),
+        billing_rounding: normalizeOptionalBillingRounding(client.billing_rounding),
+        billing_contact: normalizeBillingContact(client.billing_contact),
+        projects: Array.isArray(client.projects)
+          ? client.projects.map((project) => ({
+              id: String(project.id || "").trim(),
+              name: String(project.name || "").trim(),
+              billable: normalizeBillableFlag(project.billable, clientBillable),
+              billing_rate: normalizeBillingRate(project.billing_rate),
+              billing_period: normalizeOptionalBillingPeriod(project.billing_period),
+              billing_rounding: normalizeOptionalBillingRounding(project.billing_rounding),
+              status: normalizeStatus(project.status),
+            }))
+          : [],
+      };
+    }),
   };
 }
 
@@ -1527,9 +1610,25 @@ function normalizeSettings(settings) {
   };
 }
 
+function normalizeThemeMode(value) {
+  return value === "dark" ? "dark" : "light";
+}
+
 function normalizeBillingRate(value) {
   const text = String(value ?? "").trim();
   return text || null;
+}
+
+function normalizeBillableFlag(value, fallback = "yes") {
+  if (value === false || value === "no") {
+    return "no";
+  }
+
+  if (value === true || value === "yes") {
+    return "yes";
+  }
+
+  return fallback === "no" ? "no" : "yes";
 }
 
 function normalizeFiscalYear(fiscalYear) {
@@ -1710,6 +1809,14 @@ function buildSessionCookie(sessionId, maxAgeSeconds) {
 
 function buildExpiredSessionCookie() {
   return `${SESSION_COOKIE_NAME}=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`;
+}
+
+function buildThemeCookie(themeMode) {
+  return `${THEME_COOKIE_NAME}=${encodeURIComponent(normalizeThemeMode(themeMode))}; Max-Age=${SESSION_MAX_AGE_SECONDS}; Path=/; SameSite=Lax`;
+}
+
+function buildExpiredThemeCookie() {
+  return `${THEME_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
 }
 
 function sendJson(response, statusCode, body) {

@@ -2,11 +2,11 @@
 Plan the Project. Track the work. Preserve the knowledge.
 
 ## Background
-Longtail Forge started off as a simple, flat file time tracker and has become a project hub for me. I feel like it can be useful for others as well, so I'm building it out with more funcitonality.
+Longtail Forge started off as a simple, flat file time tracker and has become a project hub for me. I feel like it can be useful for others as well, so I'm building it out with more functionality.
 
 The name is derived from the Wired article, and later book, *The Long Tail* by Chris Anderson. The concept is that the big, obvious stuff is only part of the story. In business, a few popular products or projects get most of the attention, but there's a "long tail" of smaller, niche, less obvious things that collectively matter a lot.
 
-Freelancers and small agencies (web design & development, graphics design, etc.) tend to fill the gaps left behind by larger agencies/companies. The big project is easy. It has a start, an end, and a clearly visualized middle. The long tail of that is the stuff that comes after the launch, the redesign, or the overhaul.
+Freelancers and small agencies (web design & development, graphics design, etc.) tend to fill the gaps left behind by larger agencies/companies. The big project is easy. It has a start, an end, and a clearly visualized middle. The long tail of that is the stuff that comes after the launch:
 
 - Small fixes
 - Support requests
@@ -89,23 +89,27 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
         - Shows total number with drop down to go to clients reporting
     - [x] Table with current month's billables
         - Only shows clients with billables for the month
-    - [x] Bar graph showing previous 12 months' billables versus current month's billables
-        - Left side is hours
+    - [x] Bar graph showing previous 12 months' hours and billables versus current month's hours and billables
+        - Left side is total hours
         - Right side is dollars
         - Bottom is MM/YY with current month at far right, -12 months at far left
 
 ### Version 0.12
 - [x] Migrate to SQLite database
-- [ ] Break project and client UI apart
-- [ ] Add billable flag to time tracker
-- [ ] Add billable flag to client UI
-- [ ] Add billable flag to project UI
-- [ ] Have reporting respect billable flag
-- [ ] Create nested clients
-- [ ] Create nested projects
 - [x] Add users and full login with passwords
     - [x] Secure the app so that only the login page are accessible without login
     - [x] Create a splash page with link to login
+- [x] Break project and client UI apart
+- [x] Add billable flags to:
+    - [x] Time tracker
+    - [x] Client UI
+    - [x] Project UI
+    - [x] Have reporting respect billable flag
+    - [x] Billable doesn't uncheck on the time tracker when a non-billable client/project is selected
+- [x] Add a fourth timer
+- [x] Dark mode
+- [ ] Create nested clients
+- [ ] Create nested projects
 - [ ] Add roles
     - [ ] Super Admin
     - [ ] Organization Administrator
@@ -113,16 +117,15 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
     - [ ] Project Administrator
     - [ ] User
         - [ ] Add ability to assign each user to a specific client/project, with granular control
-- [ ] Two Factor Authentication (TOTP)
-- [ ] Passkeys
-- [ ] SSO
 
 ### Version 0.20
 - [ ] Tasks
 - [ ] Support Tickets
 - [ ] Expand Reporting
 - [ ] Invoicing
-
+- [ ] Two Factor Authentication (TOTP)
+- [ ] Passkeys
+- [ ] SSO
 
 ### Version 0.30
 - [ ] Client Users

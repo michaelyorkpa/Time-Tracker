@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Projects &amp; Clients | Longtail Forge</title>
+    <title>Clients | Longtail Forge</title>
     <script src="theme-init.js"></script>
     <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
   </head>
-  <body data-page-title="Projects &amp; Clients">
+  <body data-page-title="Clients" data-client-project-page="clients">
     <main class="wide-page">
       <div class="page-heading">
-        <h1>Projects &amp; Clients</h1>
+        <h1>Clients</h1>
         <button type="button" data-add-client>Add Client</button>
       </div>
 
@@ -26,7 +26,7 @@
       </div>
 
       <p data-client-project-status role="status" aria-live="polite"></p>
-      <section class="client-list" data-client-list aria-label="Clients and projects"></section>
+      <section class="client-list" data-client-list aria-label="Clients"></section>
 
       <dialog data-client-modal>
         <form method="dialog" data-client-form>
@@ -35,25 +35,6 @@
           <label>
             Client Name
             <input type="text" data-new-client-name required>
-          </label>
-
-          <label>
-            First Project Name
-            <input type="text" data-new-project-name required>
-          </label>
-
-          <label>
-            First Project Billing Rate ($/hour)
-            <input type="text" inputmode="decimal" data-new-project-billing-rate>
-          </label>
-
-          <label>
-            First Project Status
-            <select data-new-project-status>
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Completed</option>
-            </select>
           </label>
 
           <div class="form-actions">

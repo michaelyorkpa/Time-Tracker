@@ -12,6 +12,9 @@ const newProjectBillingRateInput = document.querySelector(
 );
 const newProjectStatusSelect = document.querySelector("[data-new-project-status]");
 const cancelClientButton = document.querySelector("[data-cancel-client]");
+const pageMode = document.body.dataset.clientProjectPage || "combined";
+const isClientsPage = pageMode === "clients";
+const isProjectsPage = pageMode === "projects";
 const clientStatuses = ["Active", "Inactive"];
 const projectStatuses = ["Active", "Inactive", "Completed"];
 const billingContactFields = [
@@ -42,26 +45,36 @@ loadPageData();
 
 clientStatusFilter.addEventListener("change", renderClients);
 
-addClientButton.addEventListener("click", () => {
-  clientForm.reset();
-  newProjectBillingRateInput.value = organizationSettings.defaultBillingRate;
-  clientModal.showModal();
-  newClientNameInput.focus();
-});
+if (addClientButton) {
+  addClientButton.addEventListener("click", () => {
+    clientForm.reset();
 
-cancelClientButton.addEventListener("click", () => {
-  if (isAddClientFormDirty() && !window.confirm("Discard this new client?")) {
-    return;
-  }
+    if (newProjectBillingRateInput) {
+      newProjectBillingRateInput.value = organizationSettings.defaultBillingRate;
+    }
 
-  clientForm.reset();
-  clientModal.close();
-});
+    clientModal.showModal();
+    newClientNameInput.focus();
+  });
+}
 
-clientForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await addClient();
-});
+if (cancelClientButton) {
+  cancelClientButton.addEventListener("click", () => {
+    if (isAddClientFormDirty() && !window.confirm("Discard this new client?")) {
+      return;
+    }
+
+    clientForm.reset();
+    clientModal.close();
+  });
+}
+
+if (clientForm) {
+  clientForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await addClient();
+  });
+}
 
 async function loadPageData() {
   setStatus("Loading clients and projects...");
@@ -80,6 +93,7 @@ async function loadPageData() {
       ? normalizeSettings(await settingsResponse.json())
       : normalizeSettings({});
     clientProjectData = normalizeData(await clientsResponse.json());
+    applyInitialClientParam();
     renderClients();
     setStatus("");
   } catch (error) {
@@ -115,13 +129,29 @@ function renderClients() {
 
     const editor = document.createElement("div");
     editor.className = "client-editor";
-    editor.append(
-      createClientNameEditor(client),
-      createBillingContactEditor(client),
-      createClientBillingSettingsEditor(client),
-      createProjectList(client),
-      createAddProjectForm(client),
-    );
+
+    if (isProjectsPage) {
+      editor.append(
+        createProjectClientActions(client),
+        createProjectCards(client),
+        createAddProjectForm(client),
+      );
+    } else if (isClientsPage) {
+      editor.append(
+        createClientNameEditor(client),
+        createBillingContactEditor(client),
+        createClientBillingSettingsEditor(client),
+        createClientPageActions(client),
+      );
+    } else {
+      editor.append(
+        createClientNameEditor(client),
+        createBillingContactEditor(client),
+        createClientBillingSettingsEditor(client),
+        createProjectList(client),
+        createAddProjectForm(client),
+      );
+    }
 
     clientItem.append(summary, editor);
     clientList.appendChild(clientItem);
@@ -171,6 +201,43 @@ function createClientNameEditor(client) {
   });
 
   wrapper.append(label, statusLabel, saveButton);
+  return wrapper;
+}
+
+function createClientPageActions(client) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "form-actions client-page-actions";
+
+  const saveButton = document.createElement("button");
+  saveButton.type = "button";
+  saveButton.textContent = "Save Client";
+  saveButton.addEventListener("click", () => {
+    document.querySelector(`[data-save-client-button="${client.id}"]`)?.click();
+  });
+
+  const editProjectsButton = document.createElement("button");
+  editProjectsButton.type = "button";
+  editProjectsButton.textContent = "Edit Projects";
+  editProjectsButton.addEventListener("click", () => {
+    window.location.href = `projects.html?client=${encodeURIComponent(client.id)}`;
+  });
+
+  wrapper.append(saveButton, editProjectsButton);
+  return wrapper;
+}
+
+function createProjectClientActions(client) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "form-actions project-client-actions";
+
+  const editClientButton = document.createElement("button");
+  editClientButton.type = "button";
+  editClientButton.textContent = "Edit Client";
+  editClientButton.addEventListener("click", () => {
+    window.location.href = `clients.html?client=${encodeURIComponent(client.id)}`;
+  });
+
+  wrapper.append(editClientButton);
   return wrapper;
 }
 
@@ -254,6 +321,9 @@ function createClientBillingSettingsEditor(client) {
   billingRateInput.value = client.billing_rate;
   billingRateLabel.appendChild(billingRateInput);
 
+  const billableLabel = createBillableCheckbox(client.billable);
+  const billableInput = billableLabel.querySelector("input");
+
   const billingPeriodEditor = createBillingPeriodEditor({
     legend: "Billing Period",
     inheritLabel: `Use organization billing period (${formatBillingPeriod(organizationSettings.billingPeriod)})`,
@@ -273,7 +343,18 @@ function createClientBillingSettingsEditor(client) {
   saveButton.textContent = "Save Billing Settings";
   saveButton.dataset.saveBillingSettingsButton = client.id;
 
+  const updateBillableState = () => {
+    const isBillable = billableInput.checked;
+    billingRateInput.disabled = !isBillable;
+    billingPeriodEditor.setDisabled(!isBillable);
+    billingRoundingEditor.setDisabled(!isBillable);
+  };
+
+  billableInput.addEventListener("change", updateBillableState);
+  updateBillableState();
+
   form.append(
+    billableLabel,
     billingRateLabel,
     billingPeriodEditor.element,
     billingRoundingEditor.element,
@@ -286,12 +367,13 @@ function createClientBillingSettingsEditor(client) {
     client.billing_rate = normalizeBillingRate(billingRateInput.value);
     client.billing_period = billingPeriodEditor.getValue();
     client.billing_rounding = billingRoundingEditor.getValue();
+    client.billable = normalizeBillableFlag(billableInput.checked);
 
     await saveClientProjectData({
       action: "client_billing_settings_updated",
       client_id: client.id,
       client_name: client.name,
-      details: `billing_rate=${client.billing_rate};billing_period=${formatBillingPeriod(getEffectiveClientBillingPeriod(client))};rounding=${formatBillingRounding(getEffectiveClientBillingRounding(client))}`,
+      details: `billable=${client.billable};billing_rate=${client.billing_rate};billing_period=${formatBillingPeriod(getEffectiveClientBillingPeriod(client))};rounding=${formatBillingRounding(getEffectiveClientBillingRounding(client))}`,
     }, {
       openClientId: client.id,
       openClientBillingSettingsId: client.id,
@@ -319,6 +401,25 @@ function createProjectList(client) {
 
   details.append(summary, list);
   return details;
+}
+
+function createProjectCards(client) {
+  const list = document.createElement("div");
+  list.className = "project-list project-list-flat";
+
+  if (client.projects.length === 0) {
+    const emptyMessage = document.createElement("p");
+    emptyMessage.className = "placeholder-copy";
+    emptyMessage.textContent = "No projects yet.";
+    list.appendChild(emptyMessage);
+    return list;
+  }
+
+  sortByName(client.projects).forEach((project) => {
+    list.appendChild(createProjectEditor(client, project));
+  });
+
+  return list;
 }
 
 function createProjectEditor(client, project) {
@@ -354,6 +455,9 @@ function createProjectEditor(client, project) {
   billingRateInput.value = project.billing_rate;
   billingRateLabel.appendChild(billingRateInput);
 
+  const billableLabel = createBillableCheckbox(project.billable);
+  const billableInput = billableLabel.querySelector("input");
+
   const billingDetails = document.createElement("details");
   billingDetails.className = "project-billing-details";
 
@@ -378,11 +482,22 @@ function createProjectEditor(client, project) {
   });
 
   billingSettings.append(
+    billableLabel,
     billingRateLabel,
     billingPeriodEditor.element,
     billingRoundingEditor.element,
   );
   billingDetails.append(billingSummary, billingSettings);
+
+  const updateBillableState = () => {
+    const isBillable = billableInput.checked;
+    billingRateInput.disabled = !isBillable;
+    billingPeriodEditor.setDisabled(!isBillable);
+    billingRoundingEditor.setDisabled(!isBillable);
+  };
+
+  billableInput.addEventListener("change", updateBillableState);
+  updateBillableState();
 
   const actionGroup = document.createElement("div");
   actionGroup.className = "project-actions";
@@ -400,6 +515,7 @@ function createProjectEditor(client, project) {
     const oldProject = { ...project };
     project.name = nameInput.value.trim();
     project.status = statusSelect.value;
+    project.billable = normalizeBillableFlag(billableInput.checked);
     project.billing_rate = normalizeBillingRate(billingRateInput.value);
     project.billing_period = billingPeriodEditor.getValue();
     project.billing_rounding = billingRoundingEditor.getValue();
@@ -410,7 +526,7 @@ function createProjectEditor(client, project) {
       client_name: client.name,
       project_id: project.id,
       project_name: project.name,
-      details: `old_project_id=${oldProject.id};old_project_name=${oldProject.name};old_status=${oldProject.status};old_billing_rate=${oldProject.billing_rate};new_status=${project.status};new_billing_rate=${project.billing_rate};billing_period=${formatBillingPeriod(getEffectiveProjectBillingPeriod(client, project))};rounding=${formatBillingRounding(getEffectiveProjectBillingRounding(client, project))}`,
+      details: `old_project_id=${oldProject.id};old_project_name=${oldProject.name};old_status=${oldProject.status};old_billable=${oldProject.billable};old_billing_rate=${oldProject.billing_rate};new_status=${project.status};new_billable=${project.billable};new_billing_rate=${project.billing_rate};billing_period=${formatBillingPeriod(getEffectiveProjectBillingPeriod(client, project))};rounding=${formatBillingRounding(getEffectiveProjectBillingRounding(client, project))}`,
     }, {
       openClientId: client.id,
       flashSelector: `[data-save-project-button="${project.id}"]`,
@@ -436,7 +552,7 @@ function createProjectEditor(client, project) {
       client_name: client.name,
       project_id: project.id,
       project_name: project.name,
-      details: `status=${project.status};billing_rate=${project.billing_rate}`,
+      details: `status=${project.status};billable=${project.billable};billing_rate=${project.billing_rate}`,
     }, {
       openClientId: client.id,
     });
@@ -478,6 +594,9 @@ function createAddProjectForm(client) {
   billingRateInput.value = getEffectiveClientBillingRate(client);
   billingRateLabel.appendChild(billingRateInput);
 
+  const billableLabel = createBillableCheckbox(client.billable);
+  const billableInput = billableLabel.querySelector("input");
+
   const billingDetails = document.createElement("details");
   billingDetails.className = "project-billing-details";
 
@@ -502,11 +621,22 @@ function createAddProjectForm(client) {
   });
 
   billingSettings.append(
+    billableLabel,
     billingRateLabel,
     billingPeriodEditor.element,
     billingRoundingEditor.element,
   );
   billingDetails.append(billingSummary, billingSettings);
+
+  const updateBillableState = () => {
+    const isBillable = billableInput.checked;
+    billingRateInput.disabled = !isBillable;
+    billingPeriodEditor.setDisabled(!isBillable);
+    billingRoundingEditor.setDisabled(!isBillable);
+  };
+
+  billableInput.addEventListener("change", updateBillableState);
+  updateBillableState();
 
   const saveButton = document.createElement("button");
   saveButton.type = "submit";
@@ -525,6 +655,7 @@ function createAddProjectForm(client) {
     const project = {
       id: createUuid(),
       name: nameInput.value.trim(),
+      billable: normalizeBillableFlag(billableInput.checked),
       billing_rate: normalizeBillingRate(billingRateInput.value),
       billing_period: billingPeriodEditor.getValue(),
       billing_rounding: billingRoundingEditor.getValue(),
@@ -539,7 +670,7 @@ function createAddProjectForm(client) {
       client_name: client.name,
       project_id: project.id,
       project_name: project.name,
-      details: `status=${project.status};billing_rate=${project.billing_rate}`,
+      details: `status=${project.status};billable=${project.billable};billing_rate=${project.billing_rate}`,
     }, {
       openClientId: client.id,
       flashSelector: `[data-add-project-button="${client.id}"]`,
@@ -551,9 +682,14 @@ function createAddProjectForm(client) {
 
 async function addClient() {
   const clientName = newClientNameInput.value.trim();
-  const projectName = newProjectNameInput.value.trim();
+  const projectName = newProjectNameInput?.value.trim() || "";
 
-  if (!clientName || !projectName) {
+  if (!clientName) {
+    setStatus("Client name is required.");
+    return;
+  }
+
+  if (!isClientsPage && !projectName) {
     setStatus("Client name and project name are required.");
     return;
   }
@@ -561,20 +697,24 @@ async function addClient() {
   const client = {
     id: createUuid(),
     name: clientName,
+    billable: "yes",
     billing_rate: organizationSettings.defaultBillingRate,
     billing_period: null,
     billing_rounding: null,
     billing_contact: createEmptyBillingContact(),
-    projects: [
-      {
-        id: createUuid(),
-        name: projectName,
-        billing_rate: normalizeBillingRate(newProjectBillingRateInput.value),
-        billing_period: null,
-        billing_rounding: null,
-        status: newProjectStatusSelect.value,
-      },
-    ],
+    projects: isClientsPage
+      ? []
+      : [
+          {
+            id: createUuid(),
+            name: projectName,
+            billable: "yes",
+            billing_rate: normalizeBillingRate(newProjectBillingRateInput?.value),
+            billing_period: null,
+            billing_rounding: null,
+            status: newProjectStatusSelect?.value || "Active",
+          },
+        ],
   };
 
   clientProjectData.clients.push(client);
@@ -583,9 +723,11 @@ async function addClient() {
     action: "client_created",
     client_id: client.id,
     client_name: client.name,
-    project_id: client.projects[0].id,
-    project_name: client.projects[0].name,
-    details: `initial_project_status=${client.projects[0].status};initial_project_billing_rate=${client.projects[0].billing_rate}`,
+    project_id: client.projects[0]?.id || "",
+    project_name: client.projects[0]?.name || "",
+    details: client.projects[0]
+      ? `initial_project_status=${client.projects[0].status};initial_project_billable=${client.projects[0].billable};initial_project_billing_rate=${client.projects[0].billing_rate}`
+      : "initial_project_created=false",
   });
 
   if (saved) {
@@ -652,31 +794,45 @@ function flashSavedButton(selector) {
   }, 1600);
 }
 
+function applyInitialClientParam() {
+  const clientId = new URLSearchParams(window.location.search).get("client") || "";
+
+  if (clientProjectData.clients.some((client) => client.id === clientId)) {
+    openClientId = clientId;
+  }
+}
+
 function normalizeData(data) {
   // Normalize immediately after every load/save so render code can trust field shapes.
   return {
     clients: Array.isArray(data.clients)
-      ? data.clients.map((client) => ({
-          id: client.id,
-          name: client.name,
-          status: clientStatuses.includes(client.status) ? client.status : "Active",
-          billing_rate: normalizeBillingRate(client.billing_rate),
-          billing_period: normalizeOptionalBillingPeriod(client.billing_period),
-          billing_rounding: normalizeOptionalBillingRounding(client.billing_rounding),
-          billing_contact: normalizeBillingContact(client.billing_contact),
-          projects: Array.isArray(client.projects)
-            ? client.projects.map((project) => ({
-                id: project.id,
-                name: project.name,
-                billing_rate: normalizeBillingRate(project.billing_rate),
-                billing_period: normalizeOptionalBillingPeriod(project.billing_period),
-                billing_rounding: normalizeOptionalBillingRounding(project.billing_rounding),
-                status: projectStatuses.includes(project.status)
-                  ? project.status
-                  : "Active",
-              }))
-            : [],
-        }))
+      ? data.clients.map((client) => {
+          const clientBillable = normalizeBillableFlag(client.billable);
+
+          return {
+            id: client.id,
+            name: client.name,
+            status: clientStatuses.includes(client.status) ? client.status : "Active",
+            billable: clientBillable,
+            billing_rate: normalizeBillingRate(client.billing_rate),
+            billing_period: normalizeOptionalBillingPeriod(client.billing_period),
+            billing_rounding: normalizeOptionalBillingRounding(client.billing_rounding),
+            billing_contact: normalizeBillingContact(client.billing_contact),
+            projects: Array.isArray(client.projects)
+              ? client.projects.map((project) => ({
+                  id: project.id,
+                  name: project.name,
+                  billable: normalizeBillableFlag(project.billable, clientBillable),
+                  billing_rate: normalizeBillingRate(project.billing_rate),
+                  billing_period: normalizeOptionalBillingPeriod(project.billing_period),
+                  billing_rounding: normalizeOptionalBillingRounding(project.billing_rounding),
+                  status: projectStatuses.includes(project.status)
+                    ? project.status
+                    : "Active",
+                }))
+              : [],
+          };
+        })
       : [],
   };
 }
@@ -692,6 +848,18 @@ function normalizeSettings(settings) {
 function normalizeBillingRate(value) {
   const text = String(value ?? "").trim();
   return text || null;
+}
+
+function normalizeBillableFlag(value, fallback = "yes") {
+  if (value === false || value === "no") {
+    return "no";
+  }
+
+  if (value === true || value === "yes") {
+    return "yes";
+  }
+
+  return fallback === "no" ? "no" : "yes";
 }
 
 function normalizeBillingPeriod(period) {
@@ -783,6 +951,9 @@ function createBillingPeriodEditor({ legend, inheritLabel, value, inheritedPerio
 
   return {
     element: fieldset,
+    setDisabled(isDisabled) {
+      fieldset.disabled = Boolean(isDisabled);
+    },
     getValue() {
       if (typeSelect.value === "inherit") {
         return null;
@@ -846,6 +1017,9 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
 
   return {
     element: fieldset,
+    setDisabled(isDisabled) {
+      fieldset.disabled = Boolean(isDisabled);
+    },
     getValue() {
       if (modeSelect.value === "inherit") {
         return null;
@@ -928,6 +1102,22 @@ function normalizeBillingContact(contact) {
   }, {});
 }
 
+function createBillableCheckbox(value) {
+  const label = document.createElement("label");
+  label.className = "inline-option billable-option";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = normalizeBillableFlag(value) === "yes";
+
+  label.append(
+    input,
+    document.createTextNode("Billable?"),
+  );
+
+  return label;
+}
+
 function createEmptyBillingContact() {
   return normalizeBillingContact({});
 }
@@ -987,9 +1177,9 @@ function createUuid() {
 function isAddClientFormDirty() {
   return Boolean(
       newClientNameInput.value.trim() ||
-      newProjectNameInput.value.trim() ||
-      newProjectBillingRateInput.value.trim() ||
-      newProjectStatusSelect.value !== "Active",
+      newProjectNameInput?.value.trim() ||
+      newProjectBillingRateInput?.value.trim() ||
+      (newProjectStatusSelect && newProjectStatusSelect.value !== "Active"),
   );
 }
 

@@ -52,7 +52,7 @@ function handleTimerCountChange() {
 }
 
 function clampTimerCount(timerCount) {
-  if ([1, 2, 3].includes(timerCount)) {
+  if ([1, 2, 3, 4].includes(timerCount)) {
     return timerCount;
   }
 
@@ -130,6 +130,9 @@ class StopwatchTimer {
     this.clearOnResetInput =
       root.querySelector("[data-stopwatch-clear-on-reset]") ||
       createClearOnResetInput(root);
+    this.billableInput =
+      root.querySelector("[data-stopwatch-billable]") ||
+      createBillableInput(root);
     this.statusMessage =
       root.querySelector("[data-stopwatch-status]") ||
       createStatusMessage(root);
@@ -260,6 +263,7 @@ class StopwatchTimer {
     this.clientSelect.value = "";
     this.populateProjectOptions([]);
     this.descriptionInput.value = "";
+    this.billableInput.checked = true;
   }
 
   async saveTimeEntry() {
@@ -293,7 +297,7 @@ class StopwatchTimer {
       end_time: endTime.toISOString(),
       duration_seconds: durationSeconds,
       duration_hours: (durationSeconds / 3600).toFixed(4),
-      billable: "yes",
+      billable: this.billableInput.checked ? "yes" : "no",
       invoice_status: "unbilled",
     };
 
@@ -385,6 +389,7 @@ class StopwatchTimer {
     }
 
     this.resetTimeTrackerWithoutConfirmation();
+    this.updateBillableDefault();
     this.confirmedClientId = this.clientSelect.value;
     this.confirmedProjectId = this.projectSelect.value;
   }
@@ -419,6 +424,7 @@ class StopwatchTimer {
       ? previousProjectId
       : "";
     this.projectSelect.disabled = projects.length === 0;
+    this.updateBillableDefault();
   }
 
   getSelectedClient() {
@@ -465,6 +471,14 @@ class StopwatchTimer {
 
   setStatus(message) {
     this.statusMessage.textContent = message;
+  }
+
+  updateBillableDefault() {
+    const selectedClient = this.getSelectedClient();
+    const selectedProject = this.getSelectedProject(selectedClient);
+    const billableSource = selectedProject || selectedClient;
+
+    this.billableInput.checked = billableSource?.billable !== "no";
   }
 }
 
@@ -525,6 +539,7 @@ function createTimeTrackerRoot(timerNumber) {
   createButton(element, "Stop", "stop");
   createButton(element, "Reset", "reset");
   createClearOnResetInput(element);
+  createBillableInput(element);
   createStatusMessage(element);
 
   return element;
@@ -593,6 +608,24 @@ function createClearOnResetInput(parent) {
   label.append(
     input,
     document.createTextNode(" Clear Info when Reset"),
+  );
+  parent.appendChild(label);
+
+  return input;
+}
+
+function createBillableInput(parent) {
+  const label = document.createElement("label");
+  label.className = "reset-option";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = true;
+  input.dataset.stopwatchBillable = "";
+
+  label.append(
+    input,
+    document.createTextNode(" Billable?"),
   );
   parent.appendChild(label);
 

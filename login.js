@@ -23,11 +23,14 @@ if (loginForm) {
         body: JSON.stringify({ username, password }),
       });
 
+      const body = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Login failed.");
       }
 
+      const themeMode = body.user?.themeMode === "dark" ? "dark" : "light";
+      window.localStorage.setItem("lf_theme", themeMode);
       window.location.assign("/home.html");
     } catch (error) {
       setLoginStatus(error.message || "Login failed.");

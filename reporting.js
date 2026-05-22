@@ -134,27 +134,35 @@ function renderReport() {
 
   projects.forEach((project) => {
     const range = getSelectedDateRange(client, project);
-    const projectSeconds = clientEntries
-      .filter((entry) => matchesProject(entry, project) && isEntryInRange(entry, range))
+    const projectEntries = clientEntries
+      .filter((entry) =>
+        matchesProject(entry, project) &&
+        isEntryInRange(entry, range),
+      );
+    const projectSeconds = projectEntries
+      .reduce((seconds, entry) => seconds + entry.durationSeconds, 0);
+    const projectBillableSeconds = projectEntries
+      .filter((entry) => entry.billable === "yes")
       .reduce((seconds, entry) => seconds + entry.durationSeconds, 0);
 
     if (projectSeconds === 0) {
       return;
     }
 
-    const roundedProjectSeconds = roundSeconds(
-      projectSeconds,
+    const roundedBillableSeconds = roundSeconds(
+      projectBillableSeconds,
       getEffectiveProjectBillingRounding(client, project),
     );
     const rate = getProjectBillingRate(client, project);
-    const billableAmount = (roundedProjectSeconds / 3600) * rate;
+    const billableAmount = (roundedBillableSeconds / 3600) * rate;
 
-    totalSeconds += roundedProjectSeconds;
+    totalSeconds += projectSeconds;
     totalBillableAmount += billableAmount;
     reportTableBody.appendChild(createReportRow(
       project,
       rate,
-      roundedProjectSeconds,
+      projectSeconds,
+      roundedBillableSeconds,
       billableAmount,
     ));
   });
@@ -175,13 +183,14 @@ function renderReport() {
   setReportStatus("");
 }
 
-function createReportRow(project, rate, seconds, billableAmount) {
+function createReportRow(project, rate, seconds, billableSeconds, billableAmount) {
+  const hasBillableTime = billableSeconds > 0;
   const row = document.createElement("tr");
   row.append(
     createTableCell(project.name, "th"),
-    createTableCell(formatRate(rate)),
+    createTableCell(hasBillableTime ? formatRate(rate) : ""),
     createTableCell(formatHours(seconds)),
-    createTableCell(formatCurrency(billableAmount)),
+    createTableCell(hasBillableTime ? formatCurrency(billableAmount) : ""),
   );
   row.firstElementChild.scope = "row";
   return row;
@@ -230,6 +239,7 @@ function parseTimeEntriesCsv(csvText) {
       projectName: entry.project_name,
       endTime: new Date(entry.end_time),
       durationSeconds: Number(entry.duration_seconds) || 0,
+      billable: entry.billable === "no" ? "no" : "yes",
     };
   });
 }
@@ -243,6 +253,7 @@ function normalizeTimeEntries(data) {
         projectName: entry.project_name,
         endTime: new Date(entry.end_time),
         durationSeconds: Number(entry.duration_seconds) || 0,
+        billable: entry.billable === "no" ? "no" : "yes",
       }))
     : [];
 }

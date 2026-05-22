@@ -1,19 +1,65 @@
+:root {
+    color-scheme: light;
+    --color-page-bg: #f5f7fb;
+    --color-surface: #ffffff;
+    --color-text: #172033;
+    --color-text-secondary: #39465f;
+    --color-muted: #516078;
+    --color-border: #d8deea;
+    --color-border-subtle: #e6ebf3;
+    --color-border-strong: #9aa7bd;
+    --color-hover: #e9eef8;
+    --color-accent: #2f6fdd;
+    --color-success: #1f8f4d;
+    --color-success-bg: #e7f7ed;
+    --color-success-text: #17663a;
+    --color-danger: #8f2f2d;
+    --color-danger-border: #b94a48;
+    --color-danger-bg: #fdeceb;
+    --shadow-card: 0 16px 40px rgba(23, 32, 51, 0.12);
+    --shadow-modal: 0 24px 70px rgba(23, 32, 51, 0.24);
+    --color-overlay: rgba(23, 32, 51, 0.45);
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --color-page-bg: #0a0804;
+    --color-surface: #000000;
+    --color-text: #e8dfcc;
+    --color-text-secondary: #c6b9a0;
+    --color-muted: #ae9f87;
+    --color-border: #272115;
+    --color-border-subtle: #19140c;
+    --color-border-strong: #655842;
+    --color-hover: #161107;
+    --color-accent: #d09022;
+    --color-success: #e070b2;
+    --color-success-bg: #180812;
+    --color-success-text: #e899c5;
+    --color-danger: #70d0d2;
+    --color-danger-border: #46b5b7;
+    --color-danger-bg: #021314;
+    --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.65);
+    --color-overlay: rgba(0, 0, 0, 0.68);
+}
+
 /* Base page shell */
 body {
     min-height: 100vh;
     margin: 0;
     display: flex;
     flex-direction: column;
-    background: #f5f7fb;
-    color: #172033;
+    background: var(--color-page-bg);
+    color: var(--color-text);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
 }
 
 .site-header {
     width: 100%;
-    background: #ffffff;
-    border-bottom: 1px solid #d8deea;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .site-nav {
@@ -27,7 +73,7 @@ body {
 }
 
 .site-brand {
-    color: #172033;
+    color: var(--color-text);
     font-size: 18px;
     font-weight: 700;
     text-decoration: none;
@@ -44,7 +90,7 @@ body {
 .nav-logout {
     padding: 8px 10px;
     border-radius: 6px;
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
@@ -56,8 +102,8 @@ body {
 .nav-menu[open] summary,
 .nav-menu:has(a[aria-current="page"]) summary,
 .nav-logout:hover {
-    background: #e9eef8;
-    color: #172033;
+    background: var(--color-hover);
+    color: var(--color-text);
 }
 
 .nav-logout {
@@ -104,10 +150,10 @@ body {
     display: grid;
     gap: 4px;
     padding: 6px;
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 16px 40px rgba(23, 32, 51, 0.12);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
 }
 
 .nav-toggle {
@@ -126,7 +172,7 @@ body {
     width: 20px;
     height: 2px;
     display: block;
-    background: #172033;
+    background: var(--color-text);
 }
 
 .site-footer {
@@ -134,9 +180,9 @@ body {
     box-sizing: border-box;
     margin-top: 40px;
     padding: 18px 0;
-    border-top: 1px solid #d8deea;
-    background: #ffffff;
-    color: #516078;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-muted);
     line-height: 1.35;
     text-align: right;
 }
@@ -152,7 +198,7 @@ body {
 }
 
 .site-footer-brand {
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 13px;
 }
 
@@ -167,10 +213,10 @@ main {
     width: min(90vw, 360px);
     margin: auto auto 48px;
     padding: 24px;
-    background: #ffffff;
-    border: 1px solid #d8deea;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 16px 40px rgba(23, 32, 51, 0.12);
+    box-shadow: var(--shadow-card);
     text-align: center;
 }
 
@@ -226,33 +272,33 @@ h1 {
 
 .placeholder-copy {
     margin: 0;
-    color: #516078;
+    color: var(--color-muted);
 }
 
 /* Status text blocks reserve space so messages do not shift the page layout. */
 [data-client-project-status] {
     min-height: 20px;
     margin: 0 0 16px;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
 [data-organization-settings-status] {
     min-height: 20px;
     margin: 16px 0 0;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
 [data-user-settings-status] {
     min-height: 20px;
     margin: 16px 0 0;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
 [data-user-settings-status].is-error {
-    color: #8f2f2d;
+    color: var(--color-danger);
 }
 
 .settings-page {
@@ -272,14 +318,14 @@ h1 {
 
 .splash-kicker {
     margin: 0 0 12px;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
     font-weight: 700;
 }
 
 .splash-copy {
     margin: 0 0 24px;
-    color: #39465f;
+    color: var(--color-text-secondary);
     line-height: 1.55;
 }
 
@@ -290,16 +336,16 @@ h1 {
     align-items: center;
     justify-content: center;
     padding: 10px 14px;
-    border: 1px solid #9aa7bd;
+    border: 1px solid var(--color-border-strong);
     border-radius: 6px;
-    background: #ffffff;
-    color: #172033;
+    background: var(--color-surface);
+    color: var(--color-text);
     font: inherit;
     text-decoration: none;
 }
 
 .button-link:hover {
-    background: #e9eef8;
+    background: var(--color-hover);
 }
 
 /* Shared settings forms */
@@ -320,7 +366,7 @@ h1 {
 [data-login-status] {
     min-height: 20px;
     margin: 0;
-    color: #8f2f2d;
+    color: var(--color-danger);
     font-size: 14px;
 }
 
@@ -338,14 +384,57 @@ h1 {
     gap: 16px;
     margin: 0;
     padding: 16px;
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
 }
 
 .settings-fieldset legend {
     padding: 0 4px;
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
+}
+
+.toggle-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.toggle-option input {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
+    appearance: none;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    background: var(--color-hover);
+    cursor: pointer;
+}
+
+.toggle-option input::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    transition: transform 160ms ease;
+}
+
+.toggle-option input:checked {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+}
+
+.toggle-option input:checked::before {
+    transform: translateX(20px);
 }
 
 /* Dashboard */
@@ -369,9 +458,9 @@ h1 {
 .dashboard-panel {
     margin-top: 16px;
     padding: 16px;
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--color-surface);
 }
 
 .dashboard-panel h2 {
@@ -384,7 +473,7 @@ h1 {
 }
 
 .home-client-details summary {
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
     cursor: pointer;
 }
@@ -395,7 +484,7 @@ h1 {
 
 .metric-value {
     margin: 0;
-    color: #172033;
+    color: var(--color-text);
     font-size: 28px;
     font-weight: 700;
     line-height: 1;
@@ -411,7 +500,7 @@ h1 {
 
 .client-radio-list legend {
     margin-bottom: 8px;
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 14px;
     font-weight: 700;
 }
@@ -435,37 +524,37 @@ h1 {
     min-width: 760px;
     width: 100%;
     height: auto;
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 12px;
 }
 
 .chart-axis {
-    stroke: #9aa7bd;
+    stroke: var(--color-border-strong);
     stroke-width: 1;
 }
 
 .chart-axis-label,
 .chart-legend {
-    fill: #39465f;
+    fill: var(--color-text-secondary);
     font-weight: 700;
 }
 
 .report-table a {
-    color: #172033;
-    text-decoration-color: #9aa7bd;
+    color: var(--color-text);
+    text-decoration-color: var(--color-border-strong);
     text-underline-offset: 3px;
 }
 
 .report-table a:hover {
-    color: #2f6fdd;
+    color: var(--color-accent);
 }
 
 .chart-hours {
-    fill: #2f6fdd;
+    fill: var(--color-accent);
 }
 
 .chart-amount {
-    fill: #1f8f4d;
+    fill: var(--color-success);
 }
 
 /* Manual entry, edit-entry, and reporting forms/tables */
@@ -490,7 +579,7 @@ h1 {
 .entry-edit-form {
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid #d8deea;
+    border-top: 1px solid var(--color-border);
 }
 
 .entry-edit-form h2 {
@@ -507,7 +596,7 @@ h1 {
 [data-entry-status] {
     min-height: 20px;
     margin: 16px 0 0;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
@@ -537,14 +626,14 @@ h1 {
 [data-report-status] {
     min-height: 20px;
     margin: 0 0 16px;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
 [data-home-status] {
     min-height: 20px;
     margin: 0 0 16px;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 
@@ -561,7 +650,7 @@ h1 {
 .report-table th,
 .report-table td {
     padding: 12px;
-    border-bottom: 1px solid #d8deea;
+    border-bottom: 1px solid var(--color-border);
     text-align: left;
     vertical-align: top;
 }
@@ -573,14 +662,14 @@ h1 {
 }
 
 .report-table thead th {
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 13px;
 }
 
 .report-table tfoot th,
 .report-table tfoot td {
     border-bottom: 0;
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
 }
 
@@ -596,14 +685,14 @@ h1 {
 }
 
 .client-item {
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--color-surface);
 }
 
 .client-item summary {
     padding: 14px 16px;
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
     cursor: pointer;
 }
@@ -627,7 +716,7 @@ h1 {
 .add-project-form {
     grid-template-columns: minmax(0, 1fr) 180px;
     padding-top: 12px;
-    border-top: 1px solid #e6ebf3;
+    border-top: 1px solid var(--color-border-subtle);
 }
 
 .client-name-row {
@@ -640,13 +729,13 @@ h1 {
 }
 
 .project-section {
-    border-top: 1px solid #e6ebf3;
+    border-top: 1px solid var(--color-border-subtle);
     padding-top: 12px;
 }
 
 .project-section > summary,
 .project-item > summary {
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
     cursor: pointer;
 }
@@ -655,10 +744,14 @@ h1 {
     padding-top: 12px;
 }
 
+.project-list-flat {
+    padding-top: 0;
+}
+
 .project-item {
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--color-surface);
 }
 
 .project-item > summary {
@@ -674,22 +767,29 @@ h1 {
     gap: 8px;
 }
 
+.client-page-actions,
+.project-client-actions {
+    justify-content: flex-start;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border-subtle);
+}
+
 .danger-button {
-    border-color: #b94a48;
-    color: #8f2f2d;
+    border-color: var(--color-danger-border);
+    color: var(--color-danger);
 }
 
 .danger-button:hover:not(:disabled) {
-    background: #fdeceb;
+    background: var(--color-danger-bg);
 }
 
 .billing-details {
-    border-top: 1px solid #e6ebf3;
+    border-top: 1px solid var(--color-border-subtle);
     padding-top: 12px;
 }
 
 .billing-details summary {
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
     cursor: pointer;
 }
@@ -715,13 +815,13 @@ h1 {
     gap: 12px;
     margin: 0;
     padding: 12px;
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
 }
 
 .billing-period-editor legend {
     padding: 0 4px;
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
 }
 
@@ -736,7 +836,7 @@ h1 {
 }
 
 .project-billing-details summary {
-    color: #172033;
+    color: var(--color-text);
     font-weight: 700;
     cursor: pointer;
 }
@@ -751,7 +851,7 @@ h1 {
 .inherited-setting {
     min-height: 18px;
     margin: 0;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 13px;
 }
 
@@ -759,13 +859,13 @@ h1 {
 dialog {
     width: min(92vw, 420px);
     padding: 0;
-    border: 1px solid #d8deea;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 24px 70px rgba(23, 32, 51, 0.24);
+    box-shadow: var(--shadow-modal);
 }
 
 dialog::backdrop {
-    background: rgba(23, 32, 51, 0.45);
+    background: var(--color-overlay);
 }
 
 [data-client-form] {
@@ -814,7 +914,7 @@ dialog::backdrop {
 label {
     display: grid;
     gap: 6px;
-    color: #39465f;
+    color: var(--color-text-secondary);
     font-size: 14px;
     font-weight: 600;
 }
@@ -837,10 +937,10 @@ textarea {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
-    border: 1px solid #9aa7bd;
+    border: 1px solid var(--color-border-strong);
     border-radius: 6px;
-    background: #ffffff;
-    color: #172033;
+    background: var(--color-surface);
+    color: var(--color-text);
     font: inherit;
 }
 
@@ -869,7 +969,7 @@ textarea {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.35;
@@ -884,22 +984,22 @@ textarea {
 button {
     min-width: 80px;
     padding: 10px 14px;
-    border: 1px solid #9aa7bd;
+    border: 1px solid var(--color-border-strong);
     border-radius: 6px;
-    background: #ffffff;
-    color: #172033;
+    background: var(--color-surface);
+    color: var(--color-text);
     font: inherit;
     cursor: pointer;
 }
 
 button:hover:not(:disabled) {
-    background: #e9eef8;
+    background: var(--color-hover);
 }
 
 button.is-saved {
-    border-color: #1f8f4d;
-    background: #e7f7ed;
-    color: #17663a;
+    border-color: var(--color-success);
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
 }
 
 button:disabled {
@@ -910,7 +1010,7 @@ button:disabled {
 [data-stopwatch-status] {
     min-height: 20px;
     margin: 0;
-    color: #516078;
+    color: var(--color-muted);
     font-size: 14px;
 }
 

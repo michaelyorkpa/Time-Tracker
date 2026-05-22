@@ -4,11 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>User Settings | Longtail Forge</title>
+    <script src="theme-init.js"></script>
     <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
   </head>
   <body data-page-title="User Settings">
     <main class="settings-page">
       <h1>User Settings</h1>
+
+      <form class="settings-form" data-user-theme-form>
+        <fieldset class="settings-fieldset">
+          <legend>Appearance</legend>
+
+          <label class="toggle-option">
+            <span>Dark Mode</span>
+            <input type="checkbox" data-dark-mode-toggle>
+          </label>
+        </fieldset>
+      </form>
 
       <form class="settings-form" data-user-password-form>
         <fieldset class="settings-fieldset">

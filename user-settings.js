@@ -1,4 +1,6 @@
-// User settings currently owns password changes for the signed-in account.
+// User settings owns per-user preferences and password changes for the signed-in account.
+const themeForm = document.querySelector("[data-user-theme-form]");
+const darkModeToggle = document.querySelector("[data-dark-mode-toggle]");
 const passwordForm = document.querySelector("[data-user-password-form]");
 const currentPasswordInput = document.querySelector("[data-current-password]");
 const newPasswordInput = document.querySelector("[data-new-password]");
@@ -6,10 +8,79 @@ const confirmPasswordInput = document.querySelector("[data-confirm-password]");
 const savePasswordButton = document.querySelector("[data-save-password]");
 const userSettingsStatus = document.querySelector("[data-user-settings-status]");
 
+loadUserSettings();
+
+themeForm.addEventListener("change", async (event) => {
+  if (event.target === darkModeToggle) {
+    await saveThemeMode();
+  }
+});
+
 passwordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await changePassword();
 });
+
+async function loadUserSettings() {
+  try {
+    const response = await fetch("/api/user/settings", { cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      window.location.replace("/login.html");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(body.error || "User settings could not be loaded.");
+    }
+
+    applyThemeMode(body.themeMode);
+    setUserSettingsStatus("");
+  } catch (error) {
+    setUserSettingsStatus(error.message || "User settings could not be loaded.", true);
+  }
+}
+
+async function saveThemeMode() {
+  const themeMode = darkModeToggle.checked ? "dark" : "light";
+  applyThemeMode(themeMode);
+  setUserSettingsStatus("Saving appearance...");
+
+  try {
+    const response = await fetch("/api/user/settings", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ themeMode }),
+    });
+    const body = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      window.location.replace("/login.html");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(body.error || "Appearance was not saved.");
+    }
+
+    applyThemeMode(body.themeMode);
+    setUserSettingsStatus("Appearance saved.");
+    window.setTimeout(() => setUserSettingsStatus(""), 1600);
+  } catch (error) {
+    setUserSettingsStatus(error.message || "Appearance was not saved.", true);
+  }
+}
+
+function applyThemeMode(themeMode) {
+  const normalizedTheme = themeMode === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = normalizedTheme;
+  document.documentElement.style.colorScheme = normalizedTheme;
+  window.localStorage.setItem("lf_theme", normalizedTheme);
+  darkModeToggle.checked = normalizedTheme === "dark";
+}
 
 async function changePassword() {
   const currentPassword = currentPasswordInput.value;
