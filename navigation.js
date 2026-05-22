@@ -17,6 +17,7 @@ const NAV_ITEMS = [
       { label: "Projects", href: "projects.html" },
       { label: "Clients", href: "clients.html" },
       { label: "Organization", href: "organization-settings.html" },
+      { label: "User Admin", href: "user-admin.html" },
       { label: "User", href: "user-settings.html" },
     ],
   },

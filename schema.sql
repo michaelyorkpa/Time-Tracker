@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL,
   password TEXT NOT NULL,
   theme_mode TEXT NOT NULL DEFAULT 'light',
+  user_status TEXT NOT NULL DEFAULT 'active',
+  protected_user TEXT NOT NULL DEFAULT 'no',
   PRIMARY KEY (organization_id, user_id),
   UNIQUE (organization_id, username),
   FOREIGN KEY (organization_id) REFERENCES organizations(id)

@@ -29,7 +29,9 @@ if (loginForm) {
         throw new Error(body.error || "Login failed.");
       }
 
-      const themeMode = body.user?.themeMode === "dark" ? "dark" : "light";
+      const themeMode = ["light", "dark", "auto"].includes(body.user?.themeMode)
+        ? body.user.themeMode
+        : "light";
       window.localStorage.setItem("lf_theme", themeMode);
       window.location.assign("/home.html");
     } catch (error) {

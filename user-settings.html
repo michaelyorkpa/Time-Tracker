@@ -15,10 +15,20 @@
         <fieldset class="settings-fieldset">
           <legend>Appearance</legend>
 
-          <label class="toggle-option">
-            <span>Dark Mode</span>
-            <input type="checkbox" data-dark-mode-toggle>
-          </label>
+          <div class="theme-mode-control" role="radiogroup" aria-label="Color mode">
+            <label>
+              <input type="radio" name="themeMode" value="light" data-theme-mode-option checked>
+              <span>Light</span>
+            </label>
+            <label>
+              <input type="radio" name="themeMode" value="dark" data-theme-mode-option>
+              <span>Dark</span>
+            </label>
+            <label>
+              <input type="radio" name="themeMode" value="auto" data-theme-mode-option>
+              <span>Auto</span>
+            </label>
+          </div>
         </fieldset>
       </form>
 

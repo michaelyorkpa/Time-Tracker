@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User Admin | Longtail Forge</title>
+    <script src="theme-init.js"></script>
+    <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
+  </head>
+  <body data-page-title="User Admin">
+    <main class="user-admin-page">
+      <h1>User Admin</h1>
+
+      <form class="settings-form" data-user-admin-form>
+        <fieldset class="settings-fieldset">
+          <legend>Add User</legend>
+
+          <label>
+            Username
+            <input type="text" data-new-user-username required autocomplete="off">
+          </label>
+        </fieldset>
+
+        <button type="submit" data-create-user>Create User</button>
+      </form>
+
+      <section class="generated-password-panel" data-generated-password-panel hidden>
+        <h2>Generated Password</h2>
+        <div class="copy-field">
+          <input type="text" data-generated-password readonly>
+          <button type="button" data-copy-generated-password>Copy</button>
+        </div>
+      </section>
+
+      <p data-user-admin-status role="status" aria-live="polite"></p>
+
+      <div class="report-table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th scope="col">Username</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-user-list></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script src="navigation.js"></script>
+    <script src="user-admin.js"></script>
+    <script src="footer.js"></script>
+  </body>
+</html>

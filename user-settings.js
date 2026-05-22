@@ -1,6 +1,7 @@
 // User settings owns per-user preferences and password changes for the signed-in account.
+const THEME_STORAGE_KEY = "lf_theme";
 const themeForm = document.querySelector("[data-user-theme-form]");
-const darkModeToggle = document.querySelector("[data-dark-mode-toggle]");
+const themeModeInputs = [...document.querySelectorAll("[data-theme-mode-option]")];
 const passwordForm = document.querySelector("[data-user-password-form]");
 const currentPasswordInput = document.querySelector("[data-current-password]");
 const newPasswordInput = document.querySelector("[data-new-password]");
@@ -11,7 +12,7 @@ const userSettingsStatus = document.querySelector("[data-user-settings-status]")
 loadUserSettings();
 
 themeForm.addEventListener("change", async (event) => {
-  if (event.target === darkModeToggle) {
+  if (event.target.matches("[data-theme-mode-option]")) {
     await saveThemeMode();
   }
 });
@@ -43,7 +44,7 @@ async function loadUserSettings() {
 }
 
 async function saveThemeMode() {
-  const themeMode = darkModeToggle.checked ? "dark" : "light";
+  const themeMode = getSelectedThemeMode();
   applyThemeMode(themeMode);
   setUserSettingsStatus("Saving appearance...");
 
@@ -75,11 +76,41 @@ async function saveThemeMode() {
 }
 
 function applyThemeMode(themeMode) {
-  const normalizedTheme = themeMode === "dark" ? "dark" : "light";
-  document.documentElement.dataset.theme = normalizedTheme;
-  document.documentElement.style.colorScheme = normalizedTheme;
-  window.localStorage.setItem("lf_theme", normalizedTheme);
-  darkModeToggle.checked = normalizedTheme === "dark";
+  const normalizedThemeMode = normalizeThemeMode(themeMode);
+  const effectiveTheme = resolveThemeMode(normalizedThemeMode);
+
+  document.documentElement.dataset.themeMode = normalizedThemeMode;
+  document.documentElement.dataset.theme = effectiveTheme;
+  document.documentElement.style.colorScheme = effectiveTheme;
+  window.localStorage.setItem(THEME_STORAGE_KEY, normalizedThemeMode);
+
+  themeModeInputs.forEach((input) => {
+    input.checked = input.value === normalizedThemeMode;
+  });
+}
+
+function getSelectedThemeMode() {
+  return normalizeThemeMode(
+    themeModeInputs.find((input) => input.checked)?.value,
+  );
+}
+
+function normalizeThemeMode(value) {
+  return ["light", "dark", "auto"].includes(value) ? value : "light";
+}
+
+function resolveThemeMode(themeMode) {
+  if (themeMode !== "auto") {
+    return themeMode;
+  }
+
+  return isAfterSundown(new Date()) ? "dark" : "light";
+}
+
+function isAfterSundown(date) {
+  const hour = date.getHours();
+
+  return hour >= 18 || hour < 6;
 }
 
 async function changePassword() {

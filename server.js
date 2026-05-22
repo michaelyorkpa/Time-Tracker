@@ -98,6 +98,26 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "GET" && pathname === "/api/users") {
+      await handleUsersRead(response, session);
+      return;
+    }
+
+    if (request.method === "POST" && pathname === "/api/users") {
+      await handleUserCreate(request, response, session);
+      return;
+    }
+
+    if (request.method === "PUT" && pathname.startsWith("/api/users/")) {
+      await handleUserAction(request, response, session, pathname);
+      return;
+    }
+
+    if (request.method === "DELETE" && pathname.startsWith("/api/users/")) {
+      await handleUserDelete(response, session, pathname);
+      return;
+    }
+
     if (request.method === "GET" && pathname === "/api/user/settings") {
       await handleUserSettingsRead(response, session);
       return;
@@ -157,6 +177,11 @@ async function handleLogin(request, response) {
     return;
   }
 
+  if (normalizeUserStatus(user.user_status) !== "active") {
+    sendJson(response, 401, { error: "This user is inactive." });
+    return;
+  }
+
   const sessionId = randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
 
@@ -210,6 +235,161 @@ async function handleSessionRead(request, response) {
       username: session.username,
     },
   });
+}
+
+async function handleUsersRead(response, session) {
+  const users = await readUsers(session.organization_id);
+
+  sendJson(response, 200, { users });
+}
+
+async function handleUserCreate(request, response, session) {
+  const payload = await readJsonBody(request);
+  const username = normalizeUsername(payload.username);
+
+  if (!username) {
+    sendJson(response, 400, { error: "Username is required." });
+    return;
+  }
+
+  const existingUser = await readUserByUsernameForOrganization(session.organization_id, username);
+
+  if (existingUser) {
+    sendJson(response, 409, { error: "A user with that username already exists." });
+    return;
+  }
+
+  const initialPassword = createGeneratedPassword();
+  const validation = validatePassword(initialPassword, username);
+
+  if (!validation.valid) {
+    sendJson(response, 500, { error: "Generated password did not meet password requirements." });
+    return;
+  }
+
+  const user = await createUser(session.organization_id, username, initialPassword);
+  const users = await readUsers(session.organization_id);
+
+  sendJson(response, 201, {
+    user,
+    users,
+    initialPassword,
+  });
+}
+
+async function handleUserAction(request, response, session, pathname) {
+  const { userId, action } = parseUserActionPath(pathname);
+
+  if (!userId || !action) {
+    sendJson(response, 404, { error: "User action was not found." });
+    return;
+  }
+
+  if (action === "reset-password") {
+    await handleUserPasswordReset(response, session, userId);
+    return;
+  }
+
+  if (action === "deactivate") {
+    await handleUserDeactivate(response, session, userId);
+    return;
+  }
+
+  if (action === "reactivate") {
+    await handleUserReactivate(response, session, userId);
+    return;
+  }
+
+  sendJson(response, 404, { error: "User action was not found." });
+}
+
+async function handleUserPasswordReset(response, session, userId) {
+  const user = await readUserById(session.organization_id, userId);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  const initialPassword = createGeneratedPassword();
+  const validation = validatePassword(initialPassword, user.username);
+
+  if (!validation.valid) {
+    sendJson(response, 500, { error: "Generated password did not meet password requirements." });
+    return;
+  }
+
+  await updateUserPassword(session.organization_id, userId, hashPassword(initialPassword));
+  sendJson(response, 200, {
+    user: userRowToAppValue(user),
+    users: await readUsers(session.organization_id),
+    initialPassword,
+  });
+}
+
+async function handleUserDeactivate(response, session, userId) {
+  const user = await readUserById(session.organization_id, userId);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  if (normalizeProtectedUserFlag(user.protected_user)) {
+    sendJson(response, 400, { error: "Protected users cannot be deactivated." });
+    return;
+  }
+
+  await updateUserStatus(session.organization_id, userId, "inactive");
+  sendJson(response, 200, {
+    user: {
+      ...userRowToAppValue(user),
+      userStatus: "inactive",
+    },
+    users: await readUsers(session.organization_id),
+  });
+}
+
+async function handleUserReactivate(response, session, userId) {
+  const user = await readUserById(session.organization_id, userId);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  await updateUserStatus(session.organization_id, userId, "active");
+  sendJson(response, 200, {
+    user: {
+      ...userRowToAppValue(user),
+      userStatus: "active",
+    },
+    users: await readUsers(session.organization_id),
+  });
+}
+
+async function handleUserDelete(response, session, pathname) {
+  const userId = parseUserPath(pathname);
+
+  if (!userId) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  const user = await readUserById(session.organization_id, userId);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  if (normalizeProtectedUserFlag(user.protected_user)) {
+    sendJson(response, 400, { error: "Protected users cannot be deleted." });
+    return;
+  }
+
+  await deleteUser(session.organization_id, userId);
+  sendJson(response, 200, { users: await readUsers(session.organization_id) });
 }
 
 async function handleUserSettingsRead(response, session) {
@@ -413,6 +593,8 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL,
   password TEXT NOT NULL,
   theme_mode TEXT NOT NULL DEFAULT 'light',
+  user_status TEXT NOT NULL DEFAULT 'active',
+  protected_user TEXT NOT NULL DEFAULT 'no',
   PRIMARY KEY (organization_id, user_id),
   UNIQUE (organization_id, username),
   FOREIGN KEY (organization_id) REFERENCES organizations(id)
@@ -487,6 +669,9 @@ CREATE TABLE IF NOT EXISTS time_entries (
   await ensureColumnExists("clients", "billable", "TEXT NOT NULL DEFAULT 'yes'");
   await ensureColumnExists("projects", "billable", "TEXT NOT NULL DEFAULT 'yes'");
   await ensureColumnExists("users", "theme_mode", "TEXT NOT NULL DEFAULT 'light'");
+  await ensureColumnExists("users", "user_status", "TEXT NOT NULL DEFAULT 'active'");
+  await ensureColumnExists("users", "protected_user", "TEXT NOT NULL DEFAULT 'no'");
+  await protectFirstUser();
 
   const organizations = await querySql("SELECT id FROM organizations ORDER BY created_at LIMIT 1;");
   let organizationId = "";
@@ -671,12 +856,15 @@ LIMIT 1;
     userId = randomUUID();
 
     await runSql(`
-INSERT INTO users (user_id, organization_id, username, password)
+INSERT INTO users (user_id, organization_id, username, password, theme_mode, user_status, protected_user)
 VALUES (
   ${sqlText(userId)},
   ${sqlText(organizationId)},
   ${sqlText(DEFAULT_SUPER_ADMIN_USERNAME)},
-  ${sqlText(hashPassword(passwordSetup.password))}
+  ${sqlText(hashPassword(passwordSetup.password))},
+  'light',
+  'active',
+  'yes'
 );
 `);
 
@@ -693,6 +881,19 @@ UPDATE time_entries
 SET user_id = ${sqlText(userId)}
 WHERE organization_id = ${sqlText(organizationId)}
   AND (user_id = 'local_user' OR user_id = '');
+`);
+}
+
+async function protectFirstUser() {
+  await runSql(`
+UPDATE users
+SET protected_user = 'yes'
+WHERE rowid = (
+  SELECT rowid
+  FROM users
+  ORDER BY rowid
+  LIMIT 1
+);
 `);
 }
 
@@ -1019,10 +1220,32 @@ SELECT
   organization_id,
   username,
   password,
-  theme_mode
+  theme_mode,
+  user_status,
+  protected_user
 FROM users
 WHERE username = ${sqlText(username)}
 ORDER BY username
+LIMIT 1;
+`);
+
+  return rows[0] || null;
+}
+
+async function readUserByUsernameForOrganization(organizationId, username) {
+  await ensureDatabase();
+  const rows = await querySql(`
+SELECT
+  user_id,
+  organization_id,
+  username,
+  password,
+  theme_mode,
+  user_status,
+  protected_user
+FROM users
+WHERE organization_id = ${sqlText(organizationId)}
+  AND username = ${sqlText(username)}
 LIMIT 1;
 `);
 
@@ -1037,7 +1260,9 @@ SELECT
   organization_id,
   username,
   password,
-  theme_mode
+  theme_mode,
+  user_status,
+  protected_user
 FROM users
 WHERE organization_id = ${sqlText(organizationId)}
   AND user_id = ${sqlText(userId)}
@@ -1045,6 +1270,48 @@ LIMIT 1;
 `);
 
   return rows[0] || null;
+}
+
+async function readUsers(organizationId) {
+  await ensureDatabase();
+  const rows = await querySql(`
+SELECT
+  user_id,
+  username,
+  theme_mode,
+  user_status,
+  protected_user
+FROM users
+WHERE organization_id = ${sqlText(organizationId)}
+ORDER BY username;
+`);
+
+  return rows.map(userRowToAppValue);
+}
+
+async function createUser(organizationId, username, password) {
+  const userId = randomUUID();
+
+  await runSql(`
+INSERT INTO users (user_id, organization_id, username, password, theme_mode, user_status, protected_user)
+VALUES (
+  ${sqlText(userId)},
+  ${sqlText(organizationId)},
+  ${sqlText(username)},
+  ${sqlText(hashPassword(password))},
+  'light',
+  'active',
+  'no'
+);
+`);
+
+  return {
+    user_id: userId,
+    username,
+    themeMode: "light",
+    userStatus: "active",
+    protectedUser: false,
+  };
 }
 
 async function updateUserPassword(organizationId, userId, passwordHash) {
@@ -1060,6 +1327,23 @@ async function updateUserThemeMode(organizationId, userId, themeMode) {
   await runSql(`
 UPDATE users
 SET theme_mode = ${sqlText(normalizeThemeMode(themeMode))}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND user_id = ${sqlText(userId)};
+`);
+}
+
+async function updateUserStatus(organizationId, userId, userStatus) {
+  await runSql(`
+UPDATE users
+SET user_status = ${sqlText(normalizeUserStatus(userStatus))}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND user_id = ${sqlText(userId)};
+`);
+}
+
+async function deleteUser(organizationId, userId) {
+  await runSql(`
+DELETE FROM users
 WHERE organization_id = ${sqlText(organizationId)}
   AND user_id = ${sqlText(userId)};
 `);
@@ -1412,6 +1696,49 @@ function normalizeTimeEntry(entry) {
   };
 }
 
+function normalizeUsername(value) {
+  return String(value || "").trim();
+}
+
+function userRowToAppValue(row) {
+  return {
+    user_id: row.user_id,
+    username: row.username,
+    themeMode: normalizeThemeMode(row.theme_mode),
+    userStatus: normalizeUserStatus(row.user_status),
+    protectedUser: normalizeProtectedUserFlag(row.protected_user),
+  };
+}
+
+function normalizeUserStatus(value) {
+  return value === "inactive" ? "inactive" : "active";
+}
+
+function normalizeProtectedUserFlag(value) {
+  return value === true || value === "yes" || value === "1" || value === 1;
+}
+
+function parseUserPath(pathname) {
+  const parts = pathname.split("/").filter(Boolean);
+
+  return parts.length === 3 && parts[0] === "api" && parts[1] === "users"
+    ? decodeURIComponent(parts[2])
+    : "";
+}
+
+function parseUserActionPath(pathname) {
+  const parts = pathname.split("/").filter(Boolean);
+
+  if (parts.length !== 4 || parts[0] !== "api" || parts[1] !== "users") {
+    return { userId: "", action: "" };
+  }
+
+  return {
+    userId: decodeURIComponent(parts[2]),
+    action: parts[3],
+  };
+}
+
 function getSuperAdminPassword() {
   // SUPER_ADMIN_PASSWORD should be set outside development; generated passwords are a fallback.
   const configuredPassword = process.env[SUPER_ADMIN_PASSWORD_ENV];
@@ -1611,7 +1938,7 @@ function normalizeSettings(settings) {
 }
 
 function normalizeThemeMode(value) {
-  return value === "dark" ? "dark" : "light";
+  return ["light", "dark", "auto"].includes(value) ? value : "light";
 }
 
 function normalizeBillingRate(value) {

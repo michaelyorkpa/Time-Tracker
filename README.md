@@ -108,6 +108,9 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
     - [x] Billable doesn't uncheck on the time tracker when a non-billable client/project is selected
 - [x] Add a fourth timer
 - [x] Dark mode
+- [x] Add user admin screen for adding users
+    - [x] Include buttons for Edit, Delete, Deactivate, Reactivate, and Reset Password
+    - [ ] Make the edit user modal real
 - [ ] Create nested clients
 - [ ] Create nested projects
 - [ ] Add roles
@@ -115,10 +118,42 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
     - [ ] Organization Administrator
     - [ ] Client Administrator
     - [ ] Project Administrator
-    - [ ] User
-        - [ ] Add ability to assign each user to a specific client/project, with granular control
+    - [ ] Client User
+    - [ ] Project User
+    - [ ] Add ability to assign each user to a specific client/project, with granular CRUD control
 
 ### Version 0.20
+- [ ] Refactor server.js
+    - [ ] Use src/app.js style structure as in
+        - src/
+            - app.js
+            - config.js
+            - routes/
+                - auth.routes.js
+                - clients.routes.js
+                - projects.routes.js
+                - time-entries.routes.js
+                - settings.routes.js
+            - middleware/
+                - require-auth.js
+                - require-role.js
+            - services/
+                - auth.service.js
+                - billing.service.js
+                - reporting.service.js
+            - repositories/
+                - users.repo.js
+                - clients.repo.js
+                - projects.repo.js
+                - time-entries.repo.js
+            - db/
+                - index.js
+                - migrations/
+                    - 001_initial_schema.sql
+                    - 002_add_tasks.sql
+- [ ] Incorporate Express or Fastify
+
+### Version 0.25
 - [ ] Tasks
 - [ ] Support Tickets
 - [ ] Expand Reporting
