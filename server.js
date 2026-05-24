@@ -290,6 +290,11 @@ async function handleUserAction(request, response, session, pathname) {
     return;
   }
 
+  if (action === "update") {
+    await handleUserUpdate(request, response, session, userId);
+    return;
+  }
+
   if (action === "deactivate") {
     await handleUserDeactivate(response, session, userId);
     return;
@@ -301,6 +306,38 @@ async function handleUserAction(request, response, session, pathname) {
   }
 
   sendJson(response, 404, { error: "User action was not found." });
+}
+
+async function handleUserUpdate(request, response, session, userId) {
+  const payload = await readJsonBody(request);
+  const username = normalizeUsername(payload.username);
+  const user = await readUserById(session.organization_id, userId);
+
+  if (!user) {
+    sendJson(response, 404, { error: "User was not found." });
+    return;
+  }
+
+  if (!username) {
+    sendJson(response, 400, { error: "Username is required." });
+    return;
+  }
+
+  const existingUser = await readUserByUsernameForOrganization(session.organization_id, username);
+
+  if (existingUser && existingUser.user_id !== userId) {
+    sendJson(response, 409, { error: "A user with that username already exists." });
+    return;
+  }
+
+  await updateUsername(session.organization_id, userId, username);
+  sendJson(response, 200, {
+    user: {
+      ...userRowToAppValue(user),
+      username,
+    },
+    users: await readUsers(session.organization_id),
+  });
 }
 
 async function handleUserPasswordReset(response, session, userId) {
@@ -1318,6 +1355,15 @@ async function updateUserPassword(organizationId, userId, passwordHash) {
   await runSql(`
 UPDATE users
 SET password = ${sqlText(passwordHash)}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND user_id = ${sqlText(userId)};
+`);
+}
+
+async function updateUsername(organizationId, userId, username) {
+  await runSql(`
+UPDATE users
+SET username = ${sqlText(username)}
 WHERE organization_id = ${sqlText(organizationId)}
   AND user_id = ${sqlText(userId)};
 `);

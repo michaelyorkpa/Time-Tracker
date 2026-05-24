@@ -6,6 +6,15 @@ const generatedPasswordInput = document.querySelector("[data-generated-password]
 const copyGeneratedPasswordButton = document.querySelector("[data-copy-generated-password]");
 const userAdminStatus = document.querySelector("[data-user-admin-status]");
 const userList = document.querySelector("[data-user-list]");
+const editUserDialog = document.querySelector("[data-edit-user-dialog]");
+const editUserForm = document.querySelector("[data-edit-user-form]");
+const editUserIdInput = document.querySelector("[data-edit-user-id]");
+const editUserUsernameInput = document.querySelector("[data-edit-user-username]");
+const cancelEditUserButton = document.querySelector("[data-cancel-edit-user]");
+const resetEditUserPasswordButton = document.querySelector("[data-reset-edit-user-password]");
+const saveEditUserButton = document.querySelector("[data-save-edit-user]");
+
+let users = [];
 
 loadUsers();
 
@@ -16,6 +25,21 @@ userAdminForm.addEventListener("submit", async (event) => {
 
 copyGeneratedPasswordButton.addEventListener("click", async () => {
   await copyGeneratedPassword();
+});
+
+editUserForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await saveEditedUser();
+});
+
+cancelEditUserButton.addEventListener("click", closeEditUserDialog);
+
+resetEditUserPasswordButton.addEventListener("click", async () => {
+  const user = getEditingUser();
+
+  if (user) {
+    await resetUserPassword(user);
+  }
 });
 
 async function loadUsers() {
@@ -82,7 +106,12 @@ async function createUser() {
   }
 }
 
-function renderUsers(users) {
+function renderUsers(nextUsers) {
+  users = Array.isArray(nextUsers) ? nextUsers : [];
+  renderUserRows(users);
+}
+
+function renderUserRows(users) {
   userList.replaceChildren();
 
   if (users.length === 0) {
@@ -115,7 +144,7 @@ function createActionsCell(user) {
 
   actions.className = "table-actions";
   actions.append(
-    createUserActionButton("Edit User", () => showEditPlaceholder(user)),
+    createUserActionButton("Edit User", () => openEditUserDialog(user)),
     createUserActionButton("Reset Password", () => resetUserPassword(user)),
     createUserActionButton(
       user.userStatus === "inactive" ? "Reactivate User" : "Deactivate User",
@@ -149,8 +178,64 @@ function createUserActionButton(label, onClick, disabled = false, className = ""
   return button;
 }
 
-function showEditPlaceholder(user) {
-  setUserAdminStatus(`Edit user is not wired yet for ${user.username}.`);
+function openEditUserDialog(user) {
+  editUserIdInput.value = user.user_id;
+  editUserUsernameInput.value = user.username;
+  editUserDialog.showModal();
+  editUserUsernameInput.focus();
+}
+
+function closeEditUserDialog() {
+  if (editUserDialog.open) {
+    editUserDialog.close();
+  }
+
+  editUserForm.reset();
+}
+
+function getEditingUser() {
+  return users.find((user) => user.user_id === editUserIdInput.value);
+}
+
+async function saveEditedUser() {
+  const user = getEditingUser();
+  const username = editUserUsernameInput.value.trim();
+
+  if (!user || !username) {
+    setUserAdminStatus("Username is required.", true);
+    return;
+  }
+
+  saveEditUserButton.disabled = true;
+  setUserAdminStatus("Saving user...");
+
+  try {
+    const response = await fetch(`/api/users/${encodeURIComponent(user.user_id)}/update`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+    const body = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      window.location.replace("/login.html");
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(body.error || "User was not saved.");
+    }
+
+    closeEditUserDialog();
+    renderUsers(body.users || []);
+    setUserAdminStatus(`Saved ${body.user?.username || username}.`);
+  } catch (error) {
+    setUserAdminStatus(error.message || "User was not saved.", true);
+  } finally {
+    saveEditUserButton.disabled = false;
+  }
 }
 
 async function resetUserPassword(user) {
@@ -158,7 +243,10 @@ async function resetUserPassword(user) {
     url: `/api/users/${encodeURIComponent(user.user_id)}/reset-password`,
     method: "PUT",
     successMessage: `Reset password for ${user.username}.`,
-    onSuccess: (body) => showGeneratedPassword(body.initialPassword || ""),
+    onSuccess: (body) => {
+      showGeneratedPassword(body.initialPassword || "");
+      closeEditUserDialog();
+    },
   });
 }
 

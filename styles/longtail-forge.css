@@ -929,9 +929,16 @@ dialog::backdrop {
     padding: 24px;
 }
 
-[data-client-form] h2 {
+[data-client-form] h2,
+.user-edit-form h2 {
     margin: 0;
     font-size: 22px;
+}
+
+.user-edit-form {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
 }
 
 .form-actions {

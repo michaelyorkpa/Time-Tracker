@@ -20,7 +20,7 @@ Freelancers and small agencies (web design & development, graphics design, etc.)
 
 I couldn't find a good, all-in-one tool that met my needs for time tracking, reporting, tasks, notes, and project management that integrated together in a way I found useful.
 
-## Early Release Roadmap
+## Early Release 50,000-Foot Roadmap
 
 ### Phase 1 - Version 0.1
 - [x] Single codebase
@@ -33,14 +33,14 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
 - [ ] Roles
 
 ### Phase 2 - Version 0.2
-  - [ ] Add organiztion_id everywhere
-  - [ ] Add PostgreSQL support
-  - [ ] Add migrations
-  - [ ] Add backups/export/import
-  - [ ] Tasks
-  - [ ] Support Tickets
-  - [ ] Notes/Knowledge Base
-  - [ ] Calendars
+- [ ] Add organiztion_id everywhere
+- [ ] Add PostgreSQL support
+- [ ] Add migrations
+- [ ] Add backups/export/import
+- [ ] Tasks
+- [ ] Support Tickets
+- [ ] Notes/Knowledge Base
+- [ ] Calendars
 
 ### Phase 3 - Version 0.3
 - [ ] Docker Compose
@@ -57,7 +57,7 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
 - [ ] email delivery
 - [ ] monitoring
 
-## Version-Specific Updates
+## Detailed Road Map
 
 ### Version 0.1
 - [x] One stop watch
@@ -150,6 +150,7 @@ I couldn't find a good, all-in-one tool that met my needs for time tracking, rep
                 - migrations/
                     - 001_initial_schema.sql
                     - 002_add_tasks.sql
+                    - etc.
 - [ ] Incorporate Express or Fastify
 
 ### Version 0.25

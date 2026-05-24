@@ -46,6 +46,24 @@
           <tbody data-user-list></tbody>
         </table>
       </div>
+
+      <dialog data-edit-user-dialog>
+        <form class="user-edit-form" data-edit-user-form>
+          <h2>Edit User</h2>
+          <input type="hidden" data-edit-user-id>
+
+          <label>
+            Username
+            <input type="text" data-edit-user-username required autocomplete="off">
+          </label>
+
+          <div class="form-actions">
+            <button type="button" data-cancel-edit-user>Cancel</button>
+            <button type="button" data-reset-edit-user-password>Reset Password</button>
+            <button type="submit" data-save-edit-user>Save User</button>
+          </div>
+        </form>
+      </dialog>
     </main>
 
     <script src="navigation.js"></script>
