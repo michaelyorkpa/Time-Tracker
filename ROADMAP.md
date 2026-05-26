@@ -1,7 +1,5 @@
 # Longtail Forge Roadmap
 
-Last updated for roadmap version 0.21.1.
-
 This file is the detailed per-version changelog and forward plan for Longtail Forge. README.md should stay cursory and point here for version-level detail.
 
 ## Version 0.1
@@ -171,16 +169,16 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.21.1
 
-- [ ] Add app version display to the shared footer
-- [ ] Use package.json version as the single source of truth
-- [ ] Add appName and appVersion to src/config.js by reading package.json
-- [ ] While updating config.js, preserve/add the existing path settings needed by db/static services: root, dataDir, logsDir, migrationsDir, sqliteCommand, databaseFile, settingsFile, clientProjectFile, and timeEntriesFile
-- [ ] Create src/routes/app-info.routes.js with GET /api/app-info returning { name, version } and Cache-Control: no-store
-- [ ] Mount the app-info route in src/app.js before requireAuth so the footer can load on public and authenticated pages
-- [ ] Update public/js/footer.js so the brand line displays "Longtail Forge vX.Y.Z" using /api/app-info
-- [ ] Gracefully fall back to "Longtail Forge" if the app-info request fails
-- [ ] Do not hard-code the version in footer.js
-- [ ] Do not change unrelated behavior
+- [x] Add app version display to the shared footer
+- [x] Use package.json version as the single source of truth
+- [x] Add appName and appVersion to src/config.js by reading package.json
+- [x] While updating config.js, preserve/add the existing path settings needed by db/static services: root, dataDir, logsDir, migrationsDir, sqliteCommand, databaseFile, settingsFile, clientProjectFile, and timeEntriesFile
+- [x] Create src/routes/app-info.routes.js with GET /api/app-info returning { name, version } and Cache-Control: no-store
+- [x] Mount the app-info route in src/app.js before requireAuth so the footer can load on public and authenticated pages
+- [x] Update public/js/footer.js so the brand line displays "Longtail Forge vX.Y.Z" using /api/app-info
+- [x] Gracefully fall back to "Longtail Forge" if the app-info request fails
+- [x] Do not hard-code the version in footer.js
+- [x] Do not change unrelated behavior
 
 ## Version 0.21.2 - Frontend Organization
 

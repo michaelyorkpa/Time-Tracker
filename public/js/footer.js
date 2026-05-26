@@ -22,3 +22,34 @@ footerLicense.textContent = [
 footerInner.append(footerBrand, footerLicense);
 footer.appendChild(footerInner);
 document.body.appendChild(footer);
+
+async function updateFooterBrand() {
+  try {
+    const response = await fetch("/api/app-info", {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("App info unavailable");
+    }
+
+    const appInfo = await response.json();
+    const name = appInfo.name || "Longtail Forge";
+    const version = appInfo.version ? ` v${appInfo.version}` : "";
+
+    footerBrand.textContent = [
+      `${name}${version}`,
+      "Copyright \u00a9 2026 Raymond Tec",
+    ].join("\n");
+  } catch {
+    footerBrand.textContent = [
+      "Longtail Forge",
+      "Copyright \u00a9 2026 Raymond Tec",
+    ].join("\n");
+  }
+}
+
+updateFooterBrand();

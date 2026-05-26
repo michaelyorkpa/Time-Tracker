@@ -6,6 +6,7 @@ import { config } from "./config.js";
 import { initializeDatabase } from "./db/index.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requireAuth } from "./middleware/require-auth.js";
+import { appInfoRoutes } from "./routes/app-info.routes.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { clientsRoutes } from "./routes/clients.routes.js";
 import { settingsRoutes } from "./routes/settings.routes.js";
@@ -20,6 +21,7 @@ function createApp() {
   app.disable("x-powered-by");
   app.use(cookieParser());
   app.use(express.static(path.join(root, "public")));
+  app.use("/api", appInfoRoutes);
   app.use("/api", authRoutes);
   app.use(requireAuth);
   app.use("/api", timeEntriesRoutes);

@@ -1,0 +1,14 @@
+import { Router } from "express";
+import { config } from "../config.js";
+
+const appInfoRoutes = Router();
+
+appInfoRoutes.get("/app-info", (_request, response) => {
+  response.setHeader("Cache-Control", "no-store");
+  response.status(200).json({
+    name: config.appName,
+    version: config.appVersion,
+  });
+});
+
+export { appInfoRoutes };

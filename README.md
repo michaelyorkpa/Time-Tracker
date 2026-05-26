@@ -1,7 +1,5 @@
 # Longtail Forge
 
-Last updated for roadmap version 0.21.1.
-
 Plan the project. Track the work. Preserve the knowledge.
 
 ## Overview
