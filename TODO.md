@@ -1,3 +1,5 @@
+This is a place for me to jot down fixes and a "Wishlist" for things I'd like to do in the future. Organized by Short, Medium, and Long term.
+
 # Short Term
 
 ## Fixes
@@ -5,13 +7,21 @@
 - [ ] Fix this: Adding timer stops/deletes running timers
 - [ ] Convert warning pop-ups to in-app modal windows, rather than browser alert modals
 
-## 
+## Tweaks
 
 - [ ] Add table of contents to top of README.md
 
 # Medium Term
 
+- [ ] Start developing administration documentation
+
 # Long Term
+
+## Module-ize the different components
+
+- [ ] Make time-tracking/billing/invoicing its own module that can be installed independently during setup
+- [ ] Make notes/knowledge base its own module
+- [ ] Make support tickets its own module
 
 ## Dashboard Tweaks
 
@@ -21,14 +31,21 @@
 
 ## Integrations
 
-- [ ] Create public-facing APIs with keys to integrate the app with existing solutions
-    - [ ] Google Tasks
-    - [ ] Micrsofot To Do
-    - [ ] ZenDesk
-    - [ ] Microsoft SharePoint
-    - [ ] WordPress
-        - [ ] Support Ticket plugin
-        - [ ] Knowledge Base plugin
-    - [ ] Shopify
-        - [ ] Knowledge Base plugin
-        - [ ] Support ticket plugin
+- [ ] Create public-facing APIs with keys to allow the app to be integrated with existing solutions
+
+- [ ] ZenDesk
+
+- [ ] Google Tasks
+
+- [ ] Micrsoft To Do    
+
+- [ ] Microsoft SharePoint
+
+- [ ] WordPress
+    - [ ] Support Ticket plugin
+    - [ ] Knowledge Base plugin
+
+- [ ] Shopify
+    - [ ] Knowledge Base plugin
+    - [ ] Support ticket plugin
+        - Would include notes plugin for Shopify Admin
