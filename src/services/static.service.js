@@ -12,10 +12,9 @@ const contentTypes = {
 
 async function read(requestUrl) {
   const requestPath = new URL(requestUrl, `http://${config.host}:${config.port}`).pathname;
-  const relativePath = requestPath === "/" ? "index.html" : requestPath.slice(1);
-  const filePath = path.resolve(config.root, relativePath);
+  const filePath = resolveRequestPath(requestPath);
 
-  if (!filePath.startsWith(config.root)) {
+  if (!filePath) {
     return {
       statusCode: 403,
       contents: "Forbidden",
@@ -43,6 +42,32 @@ async function read(requestUrl) {
 
     throw error;
   }
+}
+
+function resolveRequestPath(requestPath) {
+  if (requestPath === "/") {
+    return path.join(config.viewsDir, "public", "index.html");
+  }
+
+  if (!requestPath.endsWith(".html")) {
+    return resolvePublicAssetPath(requestPath);
+  }
+
+  const pageName = path.basename(requestPath);
+  const publicPages = new Set(["index.html", "login.html"]);
+  const viewGroup = publicPages.has(pageName) ? "public" : "protected";
+  const filePath = path.resolve(config.viewsDir, viewGroup, pageName);
+  const viewRoot = path.resolve(config.viewsDir, viewGroup);
+
+  return filePath.startsWith(`${viewRoot}${path.sep}`) ? filePath : null;
+}
+
+function resolvePublicAssetPath(requestPath) {
+  const relativePath = requestPath.startsWith("/") ? requestPath.slice(1) : requestPath;
+  const filePath = path.resolve(config.publicDir, relativePath);
+  const publicRoot = path.resolve(config.publicDir);
+
+  return filePath.startsWith(`${publicRoot}${path.sep}`) ? filePath : null;
 }
 
 export const staticService = {

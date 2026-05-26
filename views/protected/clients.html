@@ -3,14 +3,15 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Projects | Longtail Forge</title>
+    <title>Clients | Longtail Forge</title>
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
+    <link rel="stylesheet" href="css/longtail-forge.css?v=5">
   </head>
-  <body data-page-title="Projects" data-client-project-page="projects">
+  <body data-page-title="Clients" data-client-project-page="clients">
     <main class="wide-page">
       <div class="page-heading">
-        <h1>Projects</h1>
+        <h1>Clients</h1>
+        <button type="button" data-add-client>Add Client</button>
       </div>
 
       <div class="client-filters">
@@ -25,7 +26,23 @@
       </div>
 
       <p data-client-project-status role="status" aria-live="polite"></p>
-      <section class="client-list" data-client-list aria-label="Projects by client"></section>
+      <section class="client-list" data-client-list aria-label="Clients"></section>
+
+      <dialog data-client-modal>
+        <form method="dialog" data-client-form>
+          <h2>Add Client</h2>
+
+          <label>
+            Client Name
+            <input type="text" data-new-client-name required>
+          </label>
+
+          <div class="form-actions">
+            <button type="button" data-cancel-client>Cancel</button>
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </dialog>
     </main>
 
     <script src="js/navigation.js"></script>

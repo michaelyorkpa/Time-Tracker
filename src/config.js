@@ -21,6 +21,8 @@ const config = {
   host: process.env.HOST || "127.0.0.1",
   port: Number(process.env.PORT) || 8001,
   root,
+  publicDir: path.join(root, "public"),
+  viewsDir: path.join(root, "views"),
   dataDir: path.join(root, "data"),
   logsDir: path.join(root, "logs"),
   logDir: path.join(root, "logs"),

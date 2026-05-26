@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Longtail Forge</title>
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="styles/longtail-forge.css?v=5">
+    <link rel="stylesheet" href="css/longtail-forge.css?v=5">
   </head>
   <body>
     <main class="splash-page">
-      <p class="splash-kicker">Version 0.12</p>
+      <p class="splash-kicker" data-splash-version hidden></p>
       <h1>Longtail Forge</h1>
       <p class="splash-copy">
         Plan the project. Track the work. Preserve the knowledge.
         Longtail Forge brings time tracking, clients, projects, reporting,
         and workspace settings into one local project hub.
       </p>
-      <a class="button-link" href="login.html">Log In</a>
+      <a class="button-link" href="/login.html" data-splash-action>Log In</a>
     </main>
+    <script src="js/splash.js"></script>
     <script src="js/footer.js"></script>
   </body>
 </html>

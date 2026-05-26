@@ -54,10 +54,10 @@ function isLoginAssetPath(pathname) {
     pathname === "/" ||
     pathname === "/index.html" ||
     pathname === "/login.html" ||
-    pathname === "/footer.js" ||
-    pathname === "/login.js" ||
-    pathname === "/theme-init.js" ||
-    pathname === "/styles/longtail-forge.css"
+    pathname === "/js/footer.js" ||
+    pathname === "/js/login.js" ||
+    pathname === "/js/theme-init.js" ||
+    pathname === "/css/longtail-forge.css"
   );
 }
 

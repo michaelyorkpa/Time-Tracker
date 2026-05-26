@@ -1,5 +1,7 @@
 # Longtail Forge Roadmap
 
+Last updated for roadmap version 0.21.2.
+
 This file is the detailed per-version changelog and forward plan for Longtail Forge. README.md should stay cursory and point here for version-level detail.
 
 ## Version 0.1
@@ -182,14 +184,18 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.21.2 - Frontend Organization
 
-- [ ] Clean up loose .html files in root
-- [ ] Move toward:
+- [x] Clean up loose .html files in root
+- [x] Move toward:
   - public/
     - css/
     - js/
     - assets/
   - views/
     - Protected HTML
+- [x] Fix the public splash page after frontend organization
+  - [x] Remove the hard-coded Version 0.12 label
+  - [x] Use /api/app-info for the splash version display
+  - [x] Show Open App instead of Log In when an existing session is still valid
 
 ## Version 0.21.3
 
@@ -259,6 +265,7 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 ## Version 0.22.6
 
 - [ ] Login username and password box are aligned near the bottom (not at the bottom) instead of the middle of the screen
+- [ ] Rename all instances of "Home" to "Dashboard"
 
 ## Version 0.30 - Final Time Tracker Only Version
 
