@@ -242,11 +242,14 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.22.4
 
-- [ ] Increase the size of the edit entries screen to the same size as the Dashboard
-- [ ] On the Edit Entries screen, add a delete button next to the edit-entry button in the columned display
-- [ ] Update the columned section of the Edit Entries screen to fit within content columns
-- [ ] Update Edit Entries screen to show status "N/A" when billable flag is not set
-- [ ] Change saved message on time tracker to a simple green "Saved."
+- [x] Increase the size of the edit entries screen to the same width as the Dashboard and Reporting screens
+- [x] On the Edit Entries screen, add a delete button next to the edit-entry button in the columned display
+- [x] Update Edit Entries screen to show status "N/A" in the column when billable flag is not set for time entry
+- [x] Treat unbillable client/project context as "N/A" in the Edit Entries status column
+- [x] Make duration editable on the Edit Entry form as hours, minutes, and seconds
+- [x] Change saved message on time tracker stop watch to a simple green "Saved." rather than "Saved {{UUID}} to database"
+- [x] Make timer reset when stop is pressed
+- [x] Allow project-level round-hours settings to override client-level round-hours settings
 
 ## Version 0.22.5.0 - Frontend Utilities and Timer State Refactor
 

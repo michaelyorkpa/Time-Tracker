@@ -21,4 +21,9 @@ timeEntriesRoutes.put("/time-entries/:entryId", asyncRoute(async (request, respo
   response.status(200).json(result);
 }));
 
+timeEntriesRoutes.delete("/time-entries/:entryId", asyncRoute(async (request, response) => {
+  const result = await timeEntriesService.remove(request.params.entryId, request.session);
+  response.status(200).json(result);
+}));
+
 export { timeEntriesRoutes };

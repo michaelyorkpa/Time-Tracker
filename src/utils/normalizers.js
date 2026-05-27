@@ -12,11 +12,23 @@ function normalizeTimeEntry(entry) {
     end_time: String(entry.end_time || "").trim(),
     duration_seconds: String(entry.duration_seconds || "0").trim(),
     duration_hours: String(entry.duration_hours || "0").trim(),
-    billable: entry.billable === "no" ? "no" : "yes",
+    billable: normalizeTimeEntryBillable(entry.billable),
     invoice_status: ["unbilled", "billed", "paid"].includes(entry.invoice_status)
       ? entry.invoice_status
       : "unbilled",
   };
+}
+
+function normalizeTimeEntryBillable(value) {
+  if (value === "yes" || value === true) {
+    return "yes";
+  }
+
+  if (value === "no" || value === false) {
+    return "no";
+  }
+
+  return "";
 }
 
 function normalizeUsername(value) {

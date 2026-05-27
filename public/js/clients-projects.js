@@ -575,6 +575,7 @@ function createProjectEditor(client, project) {
     inheritLabel: `Use client rounding (${formatBillingRounding(getEffectiveClientBillingRounding(client))})`,
     value: project.billing_rounding,
     inheritedRounding: getEffectiveClientBillingRounding(client),
+    showModeWhenUnbillable: true,
   });
 
   billingSettings.append(
@@ -714,6 +715,7 @@ function createAddProjectForm(client) {
     inheritLabel: `Use client rounding (${formatBillingRounding(getEffectiveClientBillingRounding(client))})`,
     value: null,
     inheritedRounding: getEffectiveClientBillingRounding(client),
+    showModeWhenUnbillable: true,
   });
 
   billingSettings.append(
@@ -1067,7 +1069,13 @@ function createBillingPeriodEditor({ legend, inheritLabel, value, inheritedPerio
   return editor;
 }
 
-function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRounding }) {
+function createBillingRoundingEditor({
+  legend,
+  inheritLabel,
+  value,
+  inheritedRounding,
+  showModeWhenUnbillable = false,
+}) {
   // Rounding follows the same inheritance model as billing period.
   const fieldset = document.createElement("fieldset");
   fieldset.className = "billing-period-editor";
@@ -1115,17 +1123,22 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
   const inheritedHint = document.createElement("p");
   inheritedHint.className = "inherited-setting";
 
-  const getSelectedMode = () => isBillableMode
+  const getSelectedMode = () => (isBillableMode || showModeWhenUnbillable)
     ? modeSelect.value
     : (roundHoursInput.checked ? "round" : "exact");
 
-  const syncModeFromRoundHours = () => {
-    modeSelect.value = roundHoursInput.checked ? "round" : "exact";
+  const syncRoundHoursFromMode = () => {
+    if (modeSelect.value === "inherit") {
+      roundHoursInput.checked = normalizeBillingRounding(inheritedRounding).enabled;
+      return;
+    }
+
+    roundHoursInput.checked = modeSelect.value === "round";
   };
 
   const updateState = () => {
     const selectedMode = getSelectedMode();
-    modeLabel.hidden = !isBillableMode;
+    modeLabel.hidden = !isBillableMode && !showModeWhenUnbillable;
     roundHoursLabel.hidden = isBillableMode;
     incrementLabel.hidden = selectedMode !== "round";
     incrementSelect.disabled = selectedMode !== "round";
@@ -1134,9 +1147,12 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
       : "";
   };
 
-  modeSelect.addEventListener("change", updateState);
+  modeSelect.addEventListener("change", () => {
+    syncRoundHoursFromMode();
+    updateState();
+  });
   roundHoursInput.addEventListener("change", () => {
-    syncModeFromRoundHours();
+    modeSelect.value = roundHoursInput.checked ? "round" : "exact";
     updateState();
   });
   updateState();
@@ -1150,12 +1166,8 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
     },
     setBillableMode(isBillable) {
       isBillableMode = Boolean(isBillable);
-
-      if (!isBillableMode) {
-        syncModeFromRoundHours();
-      }
-
       fieldset.disabled = false;
+      syncRoundHoursFromMode();
       updateState();
     },
     getValue() {

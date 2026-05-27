@@ -80,6 +80,14 @@ WHERE organization_id = ${sqlText(entry.organization_id)}
 `);
 }
 
+async function remove(organizationId, entryId) {
+  await runSql(`
+DELETE FROM time_entries
+WHERE organization_id = ${sqlText(organizationId)}
+  AND entry_id = ${sqlText(entryId)};
+`);
+}
+
 function createTimeEntryInsertSql(entry, now) {
   return `
 INSERT INTO time_entries (
@@ -141,6 +149,7 @@ function timeEntryRowToAppValue(row) {
 
 export const timeEntriesRepository = {
   create,
+  remove,
   readAll,
   readById,
   update,

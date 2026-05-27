@@ -64,6 +64,27 @@ async function update(payload, entryId, session) {
   return { entry: updatedEntry, storage: "database" };
 }
 
+async function remove(entryId, session) {
+  const decodedEntryId = decodeURIComponent(entryId || "");
+  const previousEntry = await timeEntriesRepository.readById(session.organization_id, decodedEntryId);
+
+  if (!decodedEntryId || !previousEntry) {
+    throw new AppError("Time entry not found", 404);
+  }
+
+  await timeEntriesRepository.remove(session.organization_id, decodedEntryId);
+  await appendAppLog({
+    action: "time_entry_deleted",
+    client_id: previousEntry.client_id,
+    client_name: previousEntry.client_name,
+    project_id: previousEntry.project_id,
+    project_name: previousEntry.project_name,
+    details: `entry_id=${decodedEntryId};duration_seconds=${previousEntry.duration_seconds};invoice_status=${previousEntry.invoice_status}`,
+  });
+
+  return { entry_id: decodedEntryId, deleted: true };
+}
+
 async function list(session) {
   const entries = await timeEntriesRepository.readAll(session.organization_id);
   return { entries };
@@ -72,5 +93,6 @@ async function list(session) {
 export const timeEntriesService = {
   create,
   list,
+  remove,
   update,
 };

@@ -621,6 +621,10 @@ button.danger-button {
     text-align: left;
 }
 
+.edit-entries-page {
+    width: min(94vw, 1120px);
+}
+
 .entry-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -648,6 +652,23 @@ button.danger-button {
     grid-column: 1 / -1;
     margin: 0;
     font-size: 20px;
+}
+
+.duration-editor {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.duration-editor legend {
+    padding: 0 4px;
+    color: var(--color-text);
+    font-weight: 700;
 }
 
 .entry-description,
@@ -1083,6 +1104,11 @@ button:disabled {
     font-size: 14px;
 }
 
+[data-stopwatch-status].is-saved {
+    color: var(--color-success-text);
+    font-weight: 700;
+}
+
 @media (max-width: 700px) {
     /* Collapse the shared nav and single-column the dense editor/report layouts on phones. */
     .site-nav {
@@ -1138,7 +1164,8 @@ button:disabled {
     .add-project-form,
     .billing-editor,
     .entry-form,
-    .entry-filters {
+    .entry-filters,
+    .duration-editor {
         grid-template-columns: 1fr;
     }
 
@@ -1156,6 +1183,10 @@ button:disabled {
     }
 
     .reporting-page {
+        width: min(92vw, 520px);
+    }
+
+    .edit-entries-page {
         width: min(92vw, 520px);
     }
 

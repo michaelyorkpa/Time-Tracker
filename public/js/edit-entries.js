@@ -16,6 +16,9 @@ const editEntryProjectSelect = document.querySelector("[data-edit-entry-project]
 const editEntryDateInput = document.querySelector("[data-edit-entry-date]");
 const editEntryStartTimeInput = document.querySelector("[data-edit-entry-start-time]");
 const editEntryEndTimeInput = document.querySelector("[data-edit-entry-end-time]");
+const editEntryDurationHoursInput = document.querySelector("[data-edit-entry-duration-hours]");
+const editEntryDurationMinutesInput = document.querySelector("[data-edit-entry-duration-minutes]");
+const editEntryDurationSecondsInput = document.querySelector("[data-edit-entry-duration-seconds]");
 const editEntryDescriptionInput = document.querySelector("[data-edit-entry-description]");
 const editEntryBillableSelect = document.querySelector("[data-edit-entry-billable]");
 const editEntryInvoiceStatusSelect = document.querySelector("[data-edit-entry-invoice-status]");
@@ -47,7 +50,15 @@ filterClientSelect.addEventListener("change", () => {
 filterProjectSelect.addEventListener("change", renderEntries);
 editEntryClientSelect.addEventListener("change", () => {
   populateEditProjects();
+  updateEditBillableDefault();
 });
+editEntryProjectSelect.addEventListener("change", updateEditBillableDefault);
+editEntryDateInput.addEventListener("change", updateEndTimeFromDuration);
+editEntryStartTimeInput.addEventListener("change", updateEndTimeFromDuration);
+editEntryEndTimeInput.addEventListener("change", updateDurationFromTimeRange);
+editEntryDurationHoursInput.addEventListener("input", updateEndTimeFromDuration);
+editEntryDurationMinutesInput.addEventListener("input", updateEndTimeFromDuration);
+editEntryDurationSecondsInput.addEventListener("input", updateEndTimeFromDuration);
 cancelEditEntryButton.addEventListener("click", closeEditForm);
 editEntryForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -153,7 +164,7 @@ function renderEntries() {
       createTableCell(entry.clientName),
       createTableCell(entry.projectName),
       createTableCell(formatHours(entry.durationSeconds)),
-      createTableCell(formatInvoiceStatus(entry.invoiceStatus)),
+      createTableCell(formatEntryStatus(entry)),
       createActionsCell(entry),
     );
     editEntryTable.appendChild(row);
@@ -175,11 +186,22 @@ function getFilteredEntries() {
 
 function createActionsCell(entry) {
   const cell = document.createElement("td");
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = "Edit";
-  button.addEventListener("click", () => openEditForm(entry.entryId));
-  cell.appendChild(button);
+  const actions = document.createElement("div");
+  const editButton = document.createElement("button");
+  const deleteButton = document.createElement("button");
+
+  actions.className = "table-actions";
+  editButton.type = "button";
+  editButton.textContent = "Edit";
+  editButton.addEventListener("click", () => openEditForm(entry.entryId));
+
+  deleteButton.type = "button";
+  deleteButton.textContent = "Delete";
+  deleteButton.className = "danger-button";
+  deleteButton.addEventListener("click", () => deleteEntry(entry));
+
+  actions.append(editButton, deleteButton);
+  cell.appendChild(actions);
   return cell;
 }
 
@@ -199,8 +221,9 @@ function openEditForm(entryId) {
   editEntryDateInput.value = formatDateInput(entry.startTime);
   editEntryStartTimeInput.value = formatTimeInput(entry.startTime);
   editEntryEndTimeInput.value = formatTimeInput(entry.endTime);
+  setDurationInputs(entry.durationSeconds);
   editEntryDescriptionInput.value = entry.description;
-  editEntryBillableSelect.value = entry.billable;
+  editEntryBillableSelect.value = getEffectiveEntryBillable(entry);
   editEntryInvoiceStatusSelect.value = entry.invoiceStatus;
   editEntryForm.hidden = false;
   editEntryForm.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -210,7 +233,7 @@ async function saveEditedEntry() {
   const client = getClient(editEntryClientSelect.value);
   const project = getProject(editEntryClientSelect.value, editEntryProjectSelect.value);
   const startTime = createLocalDateTime(editEntryDateInput.value, editEntryStartTimeInput.value);
-  const endTime = createLocalDateTime(editEntryDateInput.value, editEntryEndTimeInput.value);
+  const durationSeconds = getDurationInputSeconds();
 
   // Keep client/project names in the saved entry so reports do not need extra joins.
   if (!client || !project) {
@@ -218,12 +241,12 @@ async function saveEditedEntry() {
     return;
   }
 
-  if (!startTime || !endTime || endTime <= startTime) {
-    setEditEntryStatus("Enter a valid date and time range.");
+  if (!startTime || durationSeconds <= 0) {
+    setEditEntryStatus("Enter a valid start time and duration.");
     return;
   }
 
-  const durationSeconds = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+  const endTime = new Date(startTime.getTime() + (durationSeconds * 1000));
   const entry = {
     client_id: client.id,
     client_name: client.name,
@@ -266,6 +289,38 @@ async function saveEditedEntry() {
   }
 }
 
+async function deleteEntry(entry) {
+  const shouldDelete = window.confirm(
+    `Delete the ${formatDate(entry.endTime)} entry for ${entry.clientName}?`,
+  );
+
+  if (!shouldDelete) {
+    return;
+  }
+
+  setEditEntryStatus("Deleting entry...");
+
+  try {
+    const response = await fetch(`/api/time-entries/${encodeURIComponent(entry.entryId)}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Could not delete entry: ${response.status}`);
+    }
+
+    if (selectedEntryId === entry.entryId) {
+      closeEditForm();
+    }
+
+    await loadEditEntryData();
+    setEditEntryStatus("Entry deleted.");
+  } catch (error) {
+    setEditEntryStatus("Entry was not deleted. Start the local server and try again.");
+    console.error(error);
+  }
+}
+
 function closeEditForm() {
   selectedEntryId = "";
   editEntryForm.hidden = true;
@@ -277,10 +332,12 @@ function normalizeClients(data) {
     ? data.clients.map((client) => ({
         id: String(client.id || "").trim(),
         name: String(client.name || "").trim(),
+        billable: normalizeEntryBillable(client.billable) || "yes",
         projects: Array.isArray(client.projects)
           ? client.projects.map((project) => ({
               id: String(project.id || "").trim(),
               name: String(project.name || "").trim(),
+              billable: normalizeEntryBillable(project.billable) || normalizeEntryBillable(client.billable) || "yes",
             }))
           : [],
       }))
@@ -300,7 +357,7 @@ function normalizeTimeEntries(data) {
         startTime: new Date(entry.start_time),
         endTime: new Date(entry.end_time),
         durationSeconds: Number(entry.duration_seconds) || 0,
-        billable: entry.billable === "no" ? "no" : "yes",
+        billable: normalizeEntryBillable(entry.billable),
         invoiceStatus: entry.invoice_status || "unbilled",
       }))
     : [];
@@ -351,6 +408,10 @@ function getSelectedUserIds() {
 }
 
 function matchesStatusFilter(entry) {
+  if (getEffectiveEntryBillable(entry) !== "yes") {
+    return !filterStatusSelect.value;
+  }
+
   return !filterStatusSelect.value || entry.invoiceStatus === filterStatusSelect.value;
 }
 
@@ -454,6 +515,20 @@ function findProjectIdForEntry(entry) {
   return client?.projects.find((project) => matchesProject(entry, project))?.id || "";
 }
 
+function updateEditBillableDefault() {
+  if (!selectedEntryId) {
+    return;
+  }
+
+  const entry = timeEntries.find((currentEntry) => currentEntry.entryId === selectedEntryId);
+
+  if (!entry || entry.billable) {
+    return;
+  }
+
+  editEntryBillableSelect.value = getEffectiveEntryBillable(entry);
+}
+
 function matchesClient(entry, client) {
   return normalizeKey(entry.clientId) === normalizeKey(client?.id) ||
     normalizeKey(entry.clientName) === normalizeKey(client?.name);
@@ -471,8 +546,8 @@ function createLocalDateTime(dateValue, timeValue) {
   }
 
   const [year, month, day] = dateValue.split("-").map(Number);
-  const [hours, minutes] = timeValue.split(":").map(Number);
-  const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  const [hours, minutes, seconds = 0] = timeValue.split(":").map(Number);
+  const date = new Date(year, month - 1, day, hours, minutes, seconds, 0);
 
   return Number.isFinite(date.getTime()) ? date : null;
 }
@@ -502,7 +577,7 @@ function formatDate(date) {
 }
 
 function formatHours(seconds) {
-  return `${(seconds / 3600).toFixed(2)} hrs`;
+  return formatDuration(seconds);
 }
 
 function formatInvoiceStatus(status) {
@@ -511,6 +586,40 @@ function formatInvoiceStatus(status) {
     billed: "Billed",
     paid: "Paid",
   }[status] || "Unbilled";
+}
+
+function formatEntryStatus(entry) {
+  if (getEffectiveEntryBillable(entry) !== "yes") {
+    return "N/A";
+  }
+
+  return formatInvoiceStatus(entry.invoiceStatus);
+}
+
+function getEffectiveEntryBillable(entry) {
+  const client = editClients.find((currentClient) => matchesClient(entry, currentClient));
+  const project = client?.projects.find((currentProject) => matchesProject(entry, currentProject));
+  const billableValues = [
+    normalizeEntryBillable(entry.billable),
+    normalizeEntryBillable(project?.billable),
+    normalizeEntryBillable(client?.billable),
+  ];
+
+  return billableValues.includes("no")
+    ? "no"
+    : billableValues.find((value) => value === "yes") || "yes";
+}
+
+function normalizeEntryBillable(value) {
+  if (value === "yes" || value === true) {
+    return "yes";
+  }
+
+  if (value === "no" || value === false) {
+    return "no";
+  }
+
+  return "";
 }
 
 function formatDateInput(date) {
@@ -525,6 +634,68 @@ function formatTimeInput(date) {
   return [
     String(date.getHours()).padStart(2, "0"),
     String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0"),
+  ].join(":");
+}
+
+function setDurationInputs(totalSeconds) {
+  const normalizedSeconds = Math.max(0, Number.parseInt(totalSeconds, 10) || 0);
+  const hours = Math.floor(normalizedSeconds / 3600);
+  const minutes = Math.floor((normalizedSeconds % 3600) / 60);
+  const seconds = normalizedSeconds % 60;
+
+  editEntryDurationHoursInput.value = String(hours);
+  editEntryDurationMinutesInput.value = String(minutes);
+  editEntryDurationSecondsInput.value = String(seconds);
+}
+
+function getDurationInputSeconds() {
+  const hours = Math.max(0, Number.parseInt(editEntryDurationHoursInput.value, 10) || 0);
+  const minutes = clampDurationPart(editEntryDurationMinutesInput.value);
+  const seconds = clampDurationPart(editEntryDurationSecondsInput.value);
+
+  editEntryDurationMinutesInput.value = String(minutes);
+  editEntryDurationSecondsInput.value = String(seconds);
+
+  return (hours * 3600) + (minutes * 60) + seconds;
+}
+
+function clampDurationPart(value) {
+  return Math.min(59, Math.max(0, Number.parseInt(value, 10) || 0));
+}
+
+function updateDurationFromTimeRange() {
+  const startTime = createLocalDateTime(editEntryDateInput.value, editEntryStartTimeInput.value);
+  const endTime = createLocalDateTime(editEntryDateInput.value, editEntryEndTimeInput.value);
+
+  if (!startTime || !endTime || endTime <= startTime) {
+    return;
+  }
+
+  setDurationInputs(Math.round((endTime.getTime() - startTime.getTime()) / 1000));
+}
+
+function updateEndTimeFromDuration() {
+  const startTime = createLocalDateTime(editEntryDateInput.value, editEntryStartTimeInput.value);
+  const durationSeconds = getDurationInputSeconds();
+
+  if (!startTime || durationSeconds <= 0) {
+    return;
+  }
+
+  editEntryEndTimeInput.value = formatTimeInput(new Date(startTime.getTime() + (durationSeconds * 1000)));
+}
+
+function formatDuration(totalSeconds) {
+  const normalizedSeconds = Math.max(0, Number.parseInt(totalSeconds, 10) || 0);
+  const hours = Math.floor(normalizedSeconds / 3600);
+  const minutes = Math.floor((normalizedSeconds % 3600) / 60);
+  const seconds = normalizedSeconds % 60;
+
+  return [
+    String(hours).padStart(2, "0"),
+    String(minutes).padStart(2, "0"),
+    String(seconds).padStart(2, "0"),
   ].join(":");
 }
 

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/longtail-forge.css?v=5">
   </head>
   <body data-page-title="Edit Entries">
-    <main class="entry-page">
+    <main class="entry-page edit-entries-page">
       <h1>Edit Entries</h1>
 
       <section class="entry-filters" aria-label="Entry filters">
@@ -102,13 +102,32 @@
 
         <label>
           Start Time
-          <input type="time" data-edit-entry-start-time required>
+          <input type="time" data-edit-entry-start-time step="1" required>
         </label>
 
         <label>
           End Time
-          <input type="time" data-edit-entry-end-time required>
+          <input type="time" data-edit-entry-end-time step="1" required>
         </label>
+
+        <fieldset class="duration-editor">
+          <legend>Duration</legend>
+
+          <label>
+            Hours
+            <input type="number" min="0" step="1" inputmode="numeric" data-edit-entry-duration-hours required>
+          </label>
+
+          <label>
+            Minutes
+            <input type="number" min="0" max="59" step="1" inputmode="numeric" data-edit-entry-duration-minutes required>
+          </label>
+
+          <label>
+            Seconds
+            <input type="number" min="0" max="59" step="1" inputmode="numeric" data-edit-entry-duration-seconds required>
+          </label>
+        </fieldset>
 
         <label class="entry-description">
           Description

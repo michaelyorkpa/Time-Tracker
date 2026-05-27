@@ -316,8 +316,8 @@ class StopwatchTimer {
         throw new Error(`Could not save time entry: ${response.status}`);
       }
 
-      const result = await response.json();
-      this.setStatus(`Saved ${result.entry_id} to the database.`);
+      await response.json();
+      this.setStatus("Saved.", "saved");
       saved = true;
     } catch (error) {
       this.setStatus(
@@ -327,7 +327,7 @@ class StopwatchTimer {
     } finally {
       this.isSaving = false;
       if (saved) {
-        this.activeStartTime = null;
+        this.resetTimeTrackerWithoutConfirmation();
       }
       this.updateButtons();
     }
@@ -469,8 +469,9 @@ class StopwatchTimer {
     return this.elapsedMilliseconds > 0 || Boolean(this.timerId);
   }
 
-  setStatus(message) {
+  setStatus(message, type = "") {
     this.statusMessage.textContent = message;
+    this.statusMessage.classList.toggle("is-saved", type === "saved");
   }
 
   updateBillableDefault() {
