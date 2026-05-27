@@ -302,38 +302,7 @@ function getCustomDateRange() {
 }
 
 function getBillingPeriodRange(period, mode) {
-  const today = new Date();
-  const normalizedPeriod = normalizeBillingPeriod(period);
-  let start;
-
-  if (normalizedPeriod.type === "custom") {
-    start = getCurrentCustomPeriodStart(today, normalizedPeriod.startDay);
-  } else {
-    start = new Date(today.getFullYear(), today.getMonth(), 1);
-  }
-
-  if (mode === "last") {
-    start = addMonths(start, -1);
-  }
-
-  return {
-    start,
-    end: addMonths(start, 1),
-  };
-}
-
-function getCurrentCustomPeriodStart(date, startDay) {
-  const currentMonthStart = new Date(date.getFullYear(), date.getMonth(), startDay);
-
-  if (date >= currentMonthStart) {
-    return currentMonthStart;
-  }
-
-  return new Date(date.getFullYear(), date.getMonth() - 1, startDay);
-}
-
-function addMonths(date, monthCount) {
-  return new Date(date.getFullYear(), date.getMonth() + monthCount, date.getDate());
+  return window.LongtailForge.billing.getBillingPeriodRange(period, mode);
 }
 
 function isEntryInRange(entry, range) {
@@ -362,52 +331,31 @@ function getEffectiveProjectBillingRounding(client, project) {
 }
 
 function matchesClient(entry, client) {
-  return normalizeKey(entry.clientId) === normalizeKey(client.id) ||
-    normalizeKey(entry.clientName) === normalizeKey(client.name);
+  return window.LongtailForge.records.matchesClient(entry, client);
 }
 
 function matchesProject(entry, project) {
-  return normalizeKey(entry.projectId) === normalizeKey(project.id) ||
-    normalizeKey(entry.projectName) === normalizeKey(project.name);
+  return window.LongtailForge.records.matchesProject(entry, project);
 }
 
 function getProjectMatchKey(project) {
-  return normalizeKey(project.id) || normalizeKey(project.name);
+  return window.LongtailForge.records.getProjectMatchKey(project);
 }
 
 function normalizeKey(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
+  return window.LongtailForge.records.normalizeKey(value);
 }
 
 function parseMoney(value) {
-  const amount = Number(String(value || "").replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) ? amount : 0;
+  return window.LongtailForge.billing.parseMoney(value);
 }
 
 function parseOptionalMoney(value) {
-  const text = String(value ?? "").trim();
-
-  if (!text) {
-    return null;
-  }
-
-  const amount = Number(text.replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) ? amount : null;
+  return window.LongtailForge.billing.parseOptionalMoney(value);
 }
 
 function normalizeBillableFlag(value, fallback = "yes") {
-  if (value === false || value === "no") {
-    return "no";
-  }
-
-  if (value === true || value === "yes") {
-    return "yes";
-  }
-
-  return fallback === "no" ? "no" : "yes";
+  return window.LongtailForge.billing.normalizeBillableFlag(value, fallback);
 }
 
 function normalizeSettings(settings) {
@@ -419,58 +367,23 @@ function normalizeSettings(settings) {
 }
 
 function normalizeBillingPeriod(period) {
-  const type = period?.type === "custom" ? "custom" : "calendarMonth";
-  const startDay = Math.min(28, Math.max(1, Number.parseInt(period?.startDay, 10) || 1));
-
-  return {
-    type,
-    startDay: type === "custom" ? startDay : 1,
-  };
+  return window.LongtailForge.billing.normalizeBillingPeriod(period);
 }
 
 function normalizeOptionalBillingPeriod(period) {
-  if (!period || period.type === "inherit") {
-    return null;
-  }
-
-  return normalizeBillingPeriod(period);
+  return window.LongtailForge.billing.normalizeOptionalBillingPeriod(period);
 }
 
 function normalizeBillingRounding(rounding) {
-  const increments = ["nearestHour", "nearestHalfHour", "nearestQuarterHour"];
-  const increment = increments.includes(rounding?.increment)
-    ? rounding.increment
-    : "nearestQuarterHour";
-
-  return {
-    enabled: Boolean(rounding?.enabled),
-    increment,
-  };
+  return window.LongtailForge.billing.normalizeBillingRounding(rounding);
 }
 
 function normalizeOptionalBillingRounding(rounding) {
-  if (!rounding || rounding.type === "inherit") {
-    return null;
-  }
-
-  return normalizeBillingRounding(rounding);
+  return window.LongtailForge.billing.normalizeOptionalBillingRounding(rounding);
 }
 
 function roundSeconds(seconds, rounding) {
-  // Rounding is applied after project totals are summed, not per individual entry.
-  const normalizedRounding = normalizeBillingRounding(rounding);
-
-  if (!normalizedRounding.enabled) {
-    return seconds;
-  }
-
-  const incrementSeconds = {
-    nearestHour: 3600,
-    nearestHalfHour: 1800,
-    nearestQuarterHour: 900,
-  }[normalizedRounding.increment];
-
-  return Math.round(seconds / incrementSeconds) * incrementSeconds;
+  return window.LongtailForge.billing.roundSeconds(seconds, rounding);
 }
 
 function updateCustomDateState() {
@@ -496,11 +409,7 @@ function parseDateInput(value) {
 }
 
 function formatDateInput(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return window.LongtailForge.formatters.dateInput(date);
 }
 
 function formatRate(rate) {
@@ -508,14 +417,11 @@ function formatRate(rate) {
 }
 
 function formatHours(seconds) {
-  return `${(seconds / 3600).toFixed(2)} hrs`;
+  return window.LongtailForge.formatters.hours(seconds);
 }
 
 function formatCurrency(amount) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  return window.LongtailForge.formatters.currency(amount);
 }
 
 function createOption(value, text) {
@@ -532,11 +438,7 @@ function createTableCell(text, tagName = "td") {
 }
 
 function sortByName(items) {
-  return [...items].sort((firstItem, secondItem) =>
-    firstItem.name.localeCompare(secondItem.name, undefined, {
-      sensitivity: "base",
-    }),
-  );
+  return window.LongtailForge.records.sortByName(items);
 }
 
 function setReportStatus(message) {

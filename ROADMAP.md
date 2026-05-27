@@ -253,46 +253,46 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.22.5.0 - Frontend Utilities and Timer State Refactor
 
-- [ ] Refactor timer count changes so adding timers does not stop, reset, delete, or rebuild existing running timers
-  - [ ] Do not clear and rebuild the entire timer grid when the selected timer count changes
-  - [ ] When increasing the timer count, append only the newly needed timer cards and timer instances
-  - [ ] When decreasing the timer count, only remove timer cards above the new selected count
-  - [ ] If a removed timer has elapsed, paused, or running time, show an in-app confirmation modal before removing it
-  - [ ] Existing timers below the new selected count must keep their current client, project, description, billable flag, elapsed time, running/paused state, and status message
-  - [ ] Add a browser-console debug helper or unit-style sanity function that confirms:
-    - [ ] Existing timer object identities are preserved when adding timers
-    - [ ] Existing running timers remain running after adding timers
-    - [ ] Removed timers are disposed cleanly when confirmed
+- [x] Refactor timer count changes so adding timers does not stop, reset, delete, or rebuild existing running timers
+  - [x] Do not clear and rebuild the entire timer grid when the selected timer count changes
+  - [x] When increasing the timer count, append only the newly needed timer cards and timer instances
+  - [x] When decreasing the timer count, only remove timer cards above the new selected count
+  - [x] If a removed timer has elapsed, paused, or running time, show an in-app confirmation modal before removing it
+  - [x] Existing timers below the new selected count must keep their current client, project, description, billable flag, elapsed time, running/paused state, and status message
+  - [x] Add a browser-console debug helper or unit-style sanity function that confirms:
+    - [x] Existing timer object identities are preserved when adding timers
+    - [x] Existing running timers remain running after adding timers
+    - [x] Removed timers are disposed cleanly when confirmed
 
 ## Version 0.22.5.1
 
-- [ ] Convert warning pop-ups to in-app modal windows instead of browser `alert()` / `confirm()` dialogs
-  - [ ] Create a shared modal/confirm helper that can be reused across timer, client/project, user, settings, edit-entry, and future admin screens
-  - [ ] Use accessible markup:
-    - [ ] `role="dialog"`
-    - [ ] `aria-modal="true"`
-    - [ ] Focus moves into the modal when opened
-    - [ ] Escape key and Cancel button close the modal
-    - [ ] Focus returns to the triggering control when closed
-  - [ ] Keep the native `beforeunload` browser warning where required, because browsers restrict custom unload modals
+- [x] Convert warning pop-ups to in-app modal windows instead of browser `alert()` / `confirm()` dialogs
+  - [x] Create a shared modal/confirm helper that can be reused across timer, client/project, user, settings, edit-entry, and future admin screens
+  - [x] Use accessible markup:
+    - [x] `role="dialog"`
+    - [x] `aria-modal="true"`
+    - [x] Focus moves into the modal when opened
+    - [x] Escape key and Cancel button close the modal
+    - [x] Focus returns to the triggering control when closed
+  - [x] Keep the native `beforeunload` browser warning where required, because browsers restrict custom unload modals
 
 ## Version 0.22.5.2
 
-- [ ] Create shared frontend helper modules under `public/js/shared/` or similar
-  - [ ] `api-client.js`
+- [x] Create shared frontend helper modules under `public/js/shared/` or similar
+  - [x] `api-client.js`
     - Wrapper around `fetch()`
     - Handles JSON request/response boilerplate
     - Handles non-OK responses consistently
     - Provides `getJson()`, `postJson()`, `putJson()`, `deleteJson()` helpers
-  - [ ] `modal.js`
+  - [x] `modal.js`
     - Shared in-app modal and confirmation helper
-  - [ ] `formatters.js`
+  - [x] `formatters.js`
     - Currency, hours, dates, names, and statuses
-  - [ ] `billing.js`
+  - [x] `billing.js`
     - Shared billing and rounding calculations used by reporting and dashboard screens
-  - [ ] `records.js` or `matching.js`
+  - [x] `records.js` or `matching.js`
     - Shared client/project matching helpers currently duplicated between reporting, dashboard, and edit-entry pages
-  - [ ] Keep this as plain browser JavaScript with no build step for now
+  - [x] Keep this as plain browser JavaScript with no build step for now
 
 ## Version 0.23.0 - Client and Project CRUD Foundation
 

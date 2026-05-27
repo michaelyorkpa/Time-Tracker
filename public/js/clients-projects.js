@@ -59,8 +59,17 @@ if (addClientButton) {
 }
 
 if (cancelClientButton) {
-  cancelClientButton.addEventListener("click", () => {
-    if (isAddClientFormDirty() && !window.confirm("Discard this new client?")) {
+  cancelClientButton.addEventListener("click", async () => {
+    const shouldDiscard = !isAddClientFormDirty() ||
+      await window.LongtailForge.modal.confirm({
+        title: "Discard new client?",
+        message: "Discard this new client?",
+        confirmLabel: "Discard",
+        cancelLabel: "Cancel",
+        danger: true,
+      });
+
+    if (!shouldDiscard) {
       return;
     }
 
@@ -80,19 +89,13 @@ async function loadPageData() {
   setStatus("Loading clients and projects...");
 
   try {
-    const [settingsResponse, clientsResponse] = await Promise.all([
-      fetch("/api/settings", { cache: "no-store" }),
-      fetch("/api/client-projects", { cache: "no-store" }),
+    const [settingsData, clientsData] = await Promise.all([
+      window.LongtailForge.api.getJson("/api/settings", { cache: "no-store" }),
+      window.LongtailForge.api.getJson("/api/client-projects", { cache: "no-store" }),
     ]);
 
-    if (!clientsResponse.ok) {
-      throw new Error(`Could not load client data: ${clientsResponse.status}`);
-    }
-
-    organizationSettings = settingsResponse.ok
-      ? normalizeSettings(await settingsResponse.json())
-      : normalizeSettings({});
-    clientProjectData = normalizeData(await clientsResponse.json());
+    organizationSettings = normalizeSettings(settingsData);
+    clientProjectData = normalizeData(clientsData);
     applyInitialClientParam();
     renderClients();
     setStatus("");
@@ -635,7 +638,15 @@ function createProjectEditor(client, project) {
   deleteButton.textContent = "Delete";
   deleteButton.className = "danger-button";
   deleteButton.addEventListener("click", async () => {
-    if (!window.confirm(`Delete project "${project.name}"?`)) {
+    const shouldDelete = await window.LongtailForge.modal.confirm({
+      title: "Delete project?",
+      message: `Delete project "${project.name}"?`,
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      danger: true,
+    });
+
+    if (!shouldDelete) {
       return;
     }
 
@@ -839,22 +850,13 @@ async function saveClientProjectData(action, viewState = {}) {
   setStatus("Saving clients and projects...");
 
   try {
-    const response = await fetch("/api/client-projects", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const result = await window.LongtailForge.api.putJson(
+      "/api/client-projects",
+      {
         data: clientProjectData,
         actions: [action],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Save failed: ${response.status}`);
-    }
-
-    const result = await response.json();
+      },
+    );
     clientProjectData = normalizeData(result.data);
     openClientId = viewState.openClientId || action.client_id || "";
     openBillingClientId = viewState.openBillingClientId || "";

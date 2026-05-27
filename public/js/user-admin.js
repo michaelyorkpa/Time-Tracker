@@ -276,9 +276,13 @@ async function toggleUserStatus(user) {
 }
 
 async function deleteUser(user) {
-  const shouldDelete = window.confirm(
-    `Delete ${user.username}? This keeps existing time entry history but removes the user account. This cannot be undone.`,
-  );
+  const shouldDelete = await window.LongtailForge.modal.confirm({
+    title: "Delete user?",
+    message: `Delete ${user.username}? This keeps existing time entry history but removes the user account. This cannot be undone.`,
+    confirmLabel: "Delete",
+    cancelLabel: "Cancel",
+    danger: true,
+  });
 
   if (!shouldDelete) {
     return;
@@ -295,22 +299,19 @@ async function runUserAction({ url, method, successMessage, onSuccess = () => {}
   setUserAdminStatus("Saving user change...");
 
   try {
-    const response = await fetch(url, { method });
-    const body = await response.json().catch(() => ({}));
-
-    if (response.status === 401) {
-      window.location.replace("/login.html");
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error(body.error || "User change was not saved.");
-    }
+    const body = method === "DELETE"
+      ? await window.LongtailForge.api.deleteJson(url)
+      : await window.LongtailForge.api.putJson(url, undefined);
 
     onSuccess(body);
     renderUsers(body.users || []);
     setUserAdminStatus(successMessage);
   } catch (error) {
+    if (error.status === 401) {
+      window.location.replace("/login.html");
+      return;
+    }
+
     setUserAdminStatus(error.message || "User change was not saved.", true);
   }
 }

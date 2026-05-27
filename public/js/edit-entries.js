@@ -265,17 +265,10 @@ async function saveEditedEntry() {
   setEditEntryStatus("Saving entry...");
 
   try {
-    const response = await fetch(`/api/time-entries/${encodeURIComponent(selectedEntryId)}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(entry),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Could not save entry: ${response.status}`);
-    }
+    await window.LongtailForge.api.putJson(
+      `/api/time-entries/${encodeURIComponent(selectedEntryId)}`,
+      entry,
+    );
 
     await loadEditEntryData();
     closeEditForm();
@@ -290,9 +283,13 @@ async function saveEditedEntry() {
 }
 
 async function deleteEntry(entry) {
-  const shouldDelete = window.confirm(
-    `Delete the ${formatDate(entry.endTime)} entry for ${entry.clientName}?`,
-  );
+  const shouldDelete = await window.LongtailForge.modal.confirm({
+    title: "Delete entry?",
+    message: `Delete the ${formatDate(entry.endTime)} entry for ${entry.clientName}?`,
+    confirmLabel: "Delete",
+    cancelLabel: "Cancel",
+    danger: true,
+  });
 
   if (!shouldDelete) {
     return;
@@ -301,13 +298,9 @@ async function deleteEntry(entry) {
   setEditEntryStatus("Deleting entry...");
 
   try {
-    const response = await fetch(`/api/time-entries/${encodeURIComponent(entry.entryId)}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Could not delete entry: ${response.status}`);
-    }
+    await window.LongtailForge.api.deleteJson(
+      `/api/time-entries/${encodeURIComponent(entry.entryId)}`,
+    );
 
     if (selectedEntryId === entry.entryId) {
       closeEditForm();
@@ -530,13 +523,11 @@ function updateEditBillableDefault() {
 }
 
 function matchesClient(entry, client) {
-  return normalizeKey(entry.clientId) === normalizeKey(client?.id) ||
-    normalizeKey(entry.clientName) === normalizeKey(client?.name);
+  return window.LongtailForge.records.matchesClient(entry, client);
 }
 
 function matchesProject(entry, project) {
-  return normalizeKey(entry.projectId) === normalizeKey(project?.id) ||
-    normalizeKey(entry.projectName) === normalizeKey(project?.name);
+  return window.LongtailForge.records.matchesProject(entry, project);
 }
 
 function createLocalDateTime(dateValue, timeValue) {
@@ -563,13 +554,6 @@ function parseDateInput(value) {
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function normalizeKey(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
-}
-
 function formatDate(date) {
   return Number.isFinite(date.getTime())
     ? date.toLocaleDateString()
@@ -581,11 +565,7 @@ function formatHours(seconds) {
 }
 
 function formatInvoiceStatus(status) {
-  return {
-    unbilled: "Unbilled",
-    billed: "Billed",
-    paid: "Paid",
-  }[status] || "Unbilled";
+  return window.LongtailForge.formatters.entryStatus(status);
 }
 
 function formatEntryStatus(entry) {
@@ -623,11 +603,7 @@ function normalizeEntryBillable(value) {
 }
 
 function formatDateInput(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return window.LongtailForge.formatters.dateInput(date);
 }
 
 function formatTimeInput(date) {

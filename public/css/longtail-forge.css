@@ -975,6 +975,31 @@ dialog::backdrop {
     gap: 8px;
 }
 
+.app-dialog-form,
+.confirm-dialog-form {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+}
+
+.app-dialog-form h2,
+.app-dialog-form p,
+.confirm-dialog-form h2,
+.confirm-dialog-form p {
+    margin: 0;
+}
+
+.app-dialog-form h2,
+.confirm-dialog-form h2 {
+    font-size: 22px;
+}
+
+.danger-action {
+    border-color: var(--color-danger-border);
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
 /* Timer cards */
 .timer-card,
 #stopwatch {

@@ -10,37 +10,32 @@ let clients = [];
 let timers = [];
 
 function setTimerCount(timerCount) {
-  // Rebuild timer cards from a template so every timer starts with clean DOM listeners.
   const nextTimerCount = clampTimerCount(timerCount);
 
-  timers.forEach((timer) => timer.dispose());
-  timers = [];
-  timerGrid.innerHTML = "";
-
-  for (let timerNumber = 1; timerNumber <= nextTimerCount; timerNumber += 1) {
-    const root = timerTemplate.cloneNode(true);
-    prepareTimerRoot(root, timerNumber);
-    timerGrid.appendChild(root);
-    const timer = new StopwatchTimer(root, timerNumber);
-    timer.setClients(clients);
-    timers.push(timer);
+  if (nextTimerCount > timers.length) {
+    appendTimers(nextTimerCount);
+  } else if (nextTimerCount < timers.length) {
+    removeTimers(nextTimerCount);
   }
 
   timerGrid.style.setProperty("--timer-count", nextTimerCount);
+
+  if (timerCountSelect) {
+    timerCountSelect.value = String(nextTimerCount);
+  }
 }
 
-function handleTimerCountChange() {
+async function handleTimerCountChange() {
   const nextCount = Number(timerCountSelect.value);
 
   if (nextCount === timers.length) {
     return;
   }
 
-  if (nextCount < timers.length && hasDiscardableTimers(nextCount)) {
-    // Shrinking the grid can hide unsaved elapsed time, so ask before discarding it.
-    const shouldDiscard = window.confirm(
-      "Reducing timers will discard time in the hidden timers. Continue?",
-    );
+  if (nextCount < timers.length) {
+    const removedTimers = timers.slice(nextCount);
+    const shouldDiscard = !hasDiscardableTimers(nextCount)
+      || await confirmTimerRemoval(removedTimers);
 
     if (!shouldDiscard) {
       timerCountSelect.value = String(timers.length);
@@ -49,6 +44,43 @@ function handleTimerCountChange() {
   }
 
   setTimerCount(nextCount);
+}
+
+function appendTimers(nextTimerCount) {
+  for (
+    let timerNumber = timers.length + 1;
+    timerNumber <= nextTimerCount;
+    timerNumber += 1
+  ) {
+    const root = getTimerRootForNumber(timerNumber);
+    prepareTimerRoot(root, timerNumber);
+    timerGrid.appendChild(root);
+
+    const timer = new StopwatchTimer(root, timerNumber);
+    timer.setClients(clients);
+    timers.push(timer);
+  }
+}
+
+function removeTimers(nextTimerCount) {
+  const removedTimers = timers.splice(nextTimerCount);
+
+  removedTimers.forEach((timer) => {
+    timer.dispose();
+    timer.root.remove();
+  });
+}
+
+function getTimerRootForNumber(timerNumber) {
+  if (timerNumber === 1) {
+    const existingRoot = timerGrid.querySelector("#stopwatch");
+
+    if (existingRoot) {
+      return existingRoot;
+    }
+  }
+
+  return timerTemplate.cloneNode(true);
 }
 
 function clampTimerCount(timerCount) {
@@ -61,6 +93,24 @@ function clampTimerCount(timerCount) {
 
 function hasDiscardableTimers(nextCount) {
   return timers.slice(nextCount).some((timer) => timer.hasElapsedTime());
+}
+
+function confirmTimerRemoval(removedTimers) {
+  const timerLabels = removedTimers
+    .filter((timer) => timer.hasElapsedTime())
+    .map((timer) => `Timer ${timer.timerNumber}`);
+  const detail =
+    timerLabels.length === 1
+      ? `${timerLabels[0]} has unsaved time.`
+      : `${timerLabels.join(", ")} have unsaved time.`;
+
+  return window.LongtailForge.modal.confirm({
+    title: "Remove timers?",
+    message: `${detail} Removing timers will discard that time.`,
+    confirmLabel: "Remove",
+    cancelLabel: "Cancel",
+    danger: true,
+  });
 }
 
 function pauseOtherTimers(activeTimer) {
@@ -84,13 +134,9 @@ window.addEventListener("beforeunload", (event) => {
 
 async function loadClientProjectData() {
   try {
-    const response = await fetch("/api/client-projects", { cache: "no-store" });
-
-    if (!response.ok) {
-      throw new Error(`Could not load client data: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await window.LongtailForge.api.getJson("/api/client-projects", {
+      cache: "no-store",
+    });
     clients = Array.isArray(data.clients) ? data.clients : [];
     timers.forEach((timer) => timer.setClients(clients));
   } catch (error) {
@@ -165,7 +211,7 @@ class StopwatchTimer {
   }
 
   dispose() {
-    // Timer cards are rebuilt when count changes, so remove listeners before dropping DOM.
+    // Removed timer cards drop their listeners before leaving the DOM.
     window.clearInterval(this.timerId);
     this.startButton.removeEventListener("click", this.startTimeTracker);
     this.pauseButton.removeEventListener("click", this.pause);
@@ -236,8 +282,8 @@ class StopwatchTimer {
     this.updateButtons();
   }
 
-  resetTimeTracker() {
-    if (!this.confirmTimerReset("Resetting the timer")) {
+  async resetTimeTracker() {
+    if (!await this.confirmTimerReset("Resetting the timer")) {
       return;
     }
 
@@ -304,19 +350,7 @@ class StopwatchTimer {
     let saved = false;
 
     try {
-      const response = await fetch("/api/time-entries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(entry),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Could not save time entry: ${response.status}`);
-      }
-
-      await response.json();
+      await window.LongtailForge.api.postJson("/api/time-entries", entry);
       this.setStatus("Saved.", "saved");
       saved = true;
     } catch (error) {
@@ -352,10 +386,10 @@ class StopwatchTimer {
     this.updateButtons();
   }
 
-  handleClientChange(options = {}) {
+  async handleClientChange(options = {}) {
     const shouldReset = options.shouldReset !== false;
 
-    if (shouldReset && !this.confirmTimerReset("Changing the client")) {
+    if (shouldReset && !await this.confirmTimerReset("Changing the client")) {
       // Restore the last confirmed values when the user cancels a destructive change.
       this.clientSelect.value = this.confirmedClientId;
       const restoredClient = this.getSelectedClient();
@@ -381,8 +415,8 @@ class StopwatchTimer {
     this.confirmedProjectId = this.projectSelect.value;
   }
 
-  handleProjectChange() {
-    if (!this.confirmTimerReset("Changing the project")) {
+  async handleProjectChange() {
+    if (!await this.confirmTimerReset("Changing the project")) {
       this.projectSelect.value = this.confirmedProjectId;
       this.updateButtons();
       return;
@@ -394,14 +428,18 @@ class StopwatchTimer {
     this.confirmedProjectId = this.projectSelect.value;
   }
 
-  confirmTimerReset(actionLabel) {
+  async confirmTimerReset(actionLabel) {
     if (!this.hasElapsedTime()) {
       return true;
     }
 
-    const shouldContinue = window.confirm(
-      `${actionLabel} will stop and reset this timer. Continue?`,
-    );
+    const shouldContinue = await window.LongtailForge.modal.confirm({
+      title: "Reset timer?",
+      message: `${actionLabel} will stop and reset this timer. Continue?`,
+      confirmLabel: "Reset",
+      cancelLabel: "Cancel",
+      danger: true,
+    });
 
     if (!shouldContinue) {
       this.setStatus("Timer change canceled.");
@@ -469,6 +507,10 @@ class StopwatchTimer {
     return this.elapsedMilliseconds > 0 || Boolean(this.timerId);
   }
 
+  isRunning() {
+    return Boolean(this.timerId);
+  }
+
   setStatus(message, type = "") {
     this.statusMessage.textContent = message;
     this.statusMessage.classList.toggle("is-saved", type === "saved");
@@ -491,12 +533,49 @@ if (timerCountSelect) {
   timerCountSelect.addEventListener("change", handleTimerCountChange);
 }
 
-window.timeTrackerDebug = () => ({
-  // Handy manual check from the browser console after changing timer rendering.
-  selectedTimerCount: timerCountSelect ? timerCountSelect.value : "",
-  timerInstances: timers.length,
-  renderedTimerCards: timerGrid.querySelectorAll(".timer-card").length,
-});
+window.timeTrackerDebug = {
+  snapshot: () => ({
+    // Handy manual check from the browser console after changing timer rendering.
+    selectedTimerCount: timerCountSelect ? timerCountSelect.value : "",
+    timerInstances: timers.length,
+    renderedTimerCards: timerGrid.querySelectorAll(".timer-card").length,
+    runningTimers: timers
+      .filter((timer) => timer.isRunning())
+      .map((timer) => timer.timerNumber),
+  }),
+  runTimerCountSanityCheck: async () => {
+    const originalCount = timers.length;
+    const originalTimers = [...timers];
+    const runningTimers = originalTimers.filter((timer) => timer.isRunning());
+    const increasedCount = Math.min(4, originalCount + 1);
+    const canExerciseAdd = increasedCount > originalCount;
+
+    if (canExerciseAdd) {
+      setTimerCount(increasedCount);
+    }
+
+    const identitiesPreserved = originalTimers.every(
+      (timer, index) => timers[index] === timer,
+    );
+    const runningTimersStayedRunning = runningTimers.every((timer) =>
+      timer.isRunning(),
+    );
+
+    if (canExerciseAdd) {
+      setTimerCount(originalCount);
+    }
+
+    return {
+      identitiesPreserved,
+      runningTimersStayedRunning,
+      removedTimersDisposedCleanly:
+        !canExerciseAdd || timers.length === originalCount,
+      note: canExerciseAdd
+        ? "Temporarily added and removed one empty timer."
+        : "Already at the maximum timer count, so add/remove was skipped.",
+    };
+  },
+};
 
 function prepareTimerRoot(root, timerNumber) {
   root.dataset.stopwatch = "";

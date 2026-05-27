@@ -349,104 +349,55 @@ function isEntryInRange(entry, range) {
 }
 
 function matchesClient(entry, client) {
-  return normalizeKey(entry.clientId) === normalizeKey(client.id) ||
-    normalizeKey(entry.clientName) === normalizeKey(client.name);
+  return window.LongtailForge.records.matchesClient(entry, client);
 }
 
 function matchesProject(entry, project) {
-  return normalizeKey(entry.projectId) === normalizeKey(project.id) ||
-    normalizeKey(entry.projectName) === normalizeKey(project.name);
+  return window.LongtailForge.records.matchesProject(entry, project);
 }
 
 function getProjectMatchKey(project) {
-  return normalizeKey(project.id) || normalizeKey(project.name);
+  return window.LongtailForge.records.getProjectMatchKey(project);
 }
 
 function normalizeKey(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
+  return window.LongtailForge.records.normalizeKey(value);
 }
 
 function parseMoney(value) {
-  const amount = Number(String(value || "").replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) ? amount : 0;
+  return window.LongtailForge.billing.parseMoney(value);
 }
 
 function parseOptionalMoney(value) {
-  const text = String(value ?? "").trim();
-
-  if (!text) {
-    return null;
-  }
-
-  const amount = Number(text.replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) ? amount : null;
+  return window.LongtailForge.billing.parseOptionalMoney(value);
 }
 
 function normalizeBillableFlag(value, fallback = "yes") {
-  if (value === false || value === "no") {
-    return "no";
-  }
-
-  if (value === true || value === "yes") {
-    return "yes";
-  }
-
-  return fallback === "no" ? "no" : "yes";
+  return window.LongtailForge.billing.normalizeBillableFlag(value, fallback);
 }
 
 function normalizeBillingRounding(rounding) {
-  const increments = ["nearestHour", "nearestHalfHour", "nearestQuarterHour"];
-  const increment = increments.includes(rounding?.increment)
-    ? rounding.increment
-    : "nearestQuarterHour";
-
-  return {
-    enabled: Boolean(rounding?.enabled),
-    increment,
-  };
+  return window.LongtailForge.billing.normalizeBillingRounding(rounding);
 }
 
 function normalizeOptionalBillingRounding(rounding) {
-  if (!rounding || rounding.type === "inherit") {
-    return null;
-  }
-
-  return normalizeBillingRounding(rounding);
+  return window.LongtailForge.billing.normalizeOptionalBillingRounding(rounding);
 }
 
 function roundSeconds(seconds, rounding) {
-  // Match reporting: round after aggregating project seconds.
-  const normalizedRounding = normalizeBillingRounding(rounding);
-
-  if (!normalizedRounding.enabled) {
-    return seconds;
-  }
-
-  const incrementSeconds = {
-    nearestHour: 3600,
-    nearestHalfHour: 1800,
-    nearestQuarterHour: 900,
-  }[normalizedRounding.increment];
-
-  return Math.round(seconds / incrementSeconds) * incrementSeconds;
+  return window.LongtailForge.billing.roundSeconds(seconds, rounding);
 }
 
 function formatHours(seconds) {
-  return `${(seconds / 3600).toFixed(2)} hrs`;
+  return window.LongtailForge.formatters.hours(seconds);
 }
 
 function formatCurrency(amount) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  return window.LongtailForge.formatters.currency(amount);
 }
 
 function formatMonthLabel(date) {
-  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getFullYear()).slice(-2)}`;
+  return window.LongtailForge.formatters.monthLabel(date);
 }
 
 function createLegend(text) {
@@ -485,11 +436,7 @@ function createClientLinkCell(client) {
 }
 
 function sortByName(items) {
-  return [...items].sort((firstItem, secondItem) =>
-    firstItem.name.localeCompare(secondItem.name, undefined, {
-      sensitivity: "base",
-    }),
-  );
+  return window.LongtailForge.records.sortByName(items);
 }
 
 function setDashboardStatus(message) {
