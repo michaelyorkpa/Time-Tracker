@@ -1,7 +1,7 @@
 // User settings owns per-user preferences and password changes for the signed-in account.
 const THEME_STORAGE_KEY = "lf_theme";
 const themeForm = document.querySelector("[data-user-theme-form]");
-const themeModeInputs = [...document.querySelectorAll("[data-theme-mode-option]")];
+const themeModeToggle = document.querySelector("[data-theme-mode-toggle]");
 const passwordForm = document.querySelector("[data-user-password-form]");
 const currentPasswordInput = document.querySelector("[data-current-password]");
 const newPasswordInput = document.querySelector("[data-new-password]");
@@ -12,7 +12,7 @@ const userSettingsStatus = document.querySelector("[data-user-settings-status]")
 loadUserSettings();
 
 themeForm.addEventListener("change", async (event) => {
-  if (event.target.matches("[data-theme-mode-option]")) {
+  if (event.target.matches("[data-theme-mode-toggle]")) {
     await saveThemeMode();
   }
 });
@@ -83,34 +83,19 @@ function applyThemeMode(themeMode) {
   document.documentElement.dataset.theme = effectiveTheme;
   document.documentElement.style.colorScheme = effectiveTheme;
   window.localStorage.setItem(THEME_STORAGE_KEY, normalizedThemeMode);
-
-  themeModeInputs.forEach((input) => {
-    input.checked = input.value === normalizedThemeMode;
-  });
+  themeModeToggle.checked = normalizedThemeMode === "dark";
 }
 
 function getSelectedThemeMode() {
-  return normalizeThemeMode(
-    themeModeInputs.find((input) => input.checked)?.value,
-  );
+  return themeModeToggle.checked ? "dark" : "light";
 }
 
 function normalizeThemeMode(value) {
-  return ["light", "dark", "auto"].includes(value) ? value : "light";
+  return value === "dark" ? "dark" : "light";
 }
 
 function resolveThemeMode(themeMode) {
-  if (themeMode !== "auto") {
-    return themeMode;
-  }
-
-  return isAfterSundown(new Date()) ? "dark" : "light";
-}
-
-function isAfterSundown(date) {
-  const hour = date.getHours();
-
-  return hour >= 18 || hour < 6;
+  return normalizeThemeMode(themeMode);
 }
 
 async function changePassword() {

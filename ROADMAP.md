@@ -234,20 +234,21 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.22.3
 
-- [ ] Increase the size to 80% of desktop viewport for the Reporting screen
-- [ ] Add filters to the edit entries screen for:
-  - [ ] Entry status (Billed/Unbilled)
-  - [ ] Dates (Last billing period, current billing period, custom)
-  - [ ] User(s)
+- [x] Increase the size of the reporting screen to the same size as the Dashboard
+- [x] Add filters to the edit entries screen for:
+  - [x] Entry status (Billed/Unbilled)
+  - [x] Dates (Last billing period, current billing period, custom)
+  - [x] User(s)
 
 ## Version 0.22.4
 
+- [ ] Increase the size of the edit entries screen to the same size as the Dashboard
 - [ ] On the Edit Entries screen, add a delete button next to the edit-entry button in the columned display
 - [ ] Update the columned section of the Edit Entries screen to fit within content columns
 - [ ] Update Edit Entries screen to show status "N/A" when billable flag is not set
 - [ ] Change saved message on time tracker to a simple green "Saved."
 
-## Version 0.22.5 - Frontend Utilities and Timer State Refactor
+## Version 0.22.5.0 - Frontend Utilities and Timer State Refactor
 
 - [ ] Refactor timer count changes so adding timers does not stop, reset, delete, or rebuild existing running timers
   - [ ] Do not clear and rebuild the entire timer grid when the selected timer count changes
@@ -259,6 +260,9 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
     - [ ] Existing timer object identities are preserved when adding timers
     - [ ] Existing running timers remain running after adding timers
     - [ ] Removed timers are disposed cleanly when confirmed
+
+## Version 0.22.5.1
+
 - [ ] Convert warning pop-ups to in-app modal windows instead of browser `alert()` / `confirm()` dialogs
   - [ ] Create a shared modal/confirm helper that can be reused across timer, client/project, user, settings, edit-entry, and future admin screens
   - [ ] Use accessible markup:
@@ -268,6 +272,9 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
     - [ ] Escape key and Cancel button close the modal
     - [ ] Focus returns to the triggering control when closed
   - [ ] Keep the native `beforeunload` browser warning where required, because browsers restrict custom unload modals
+
+## Version 0.22.5.2
+
 - [ ] Create shared frontend helper modules under `public/js/shared/` or similar
   - [ ] `api-client.js`
     - Wrapper around `fetch()`
@@ -698,6 +705,8 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
     - [ ] Active start time
     - [ ] Running/paused state
   - [ ] Timer persistence should build on the timer state refactor from Version 0.22.5
+
+## Version 0.31.0 - User, client, and project functionality expansion
 - [ ] Create nested clients
 - [ ] Create nested projects
 - [ ] Add backups/export/import

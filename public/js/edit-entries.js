@@ -1,6 +1,12 @@
 // Edit Entries reuses the reporting data sources, then writes changes back by entry ID.
 const filterClientSelect = document.querySelector("[data-edit-filter-client]");
 const filterProjectSelect = document.querySelector("[data-edit-filter-project]");
+const filterStatusSelect = document.querySelector("[data-edit-filter-status]");
+const filterPeriodSelect = document.querySelector("[data-edit-filter-period]");
+const filterCustomDates = document.querySelector("[data-edit-filter-custom-dates]");
+const filterStartDateInput = document.querySelector("[data-edit-filter-start-date]");
+const filterEndDateInput = document.querySelector("[data-edit-filter-end-date]");
+const filterUsersSelect = document.querySelector("[data-edit-filter-users]");
 const editEntryStatus = document.querySelector("[data-edit-entry-status]");
 const editEntryTable = document.querySelector("[data-edit-entry-table]");
 const editEntryForm = document.querySelector("[data-edit-entry-form]");
@@ -17,11 +23,23 @@ const cancelEditEntryButton = document.querySelector("[data-cancel-edit-entry]")
 const saveEditEntryButton = document.querySelector("[data-save-edit-entry]");
 
 let editClients = [];
+let editSettings = {
+  billingPeriod: { type: "calendarMonth", startDay: 1 },
+};
 let timeEntries = [];
+let editUsers = [];
 let selectedEntryId = "";
 
 loadEditEntryData();
 
+filterStatusSelect.addEventListener("change", renderEntries);
+filterPeriodSelect.addEventListener("change", () => {
+  updateFilterDateState();
+  renderEntries();
+});
+filterStartDateInput.addEventListener("change", renderEntries);
+filterEndDateInput.addEventListener("change", renderEntries);
+filterUsersSelect.addEventListener("change", renderEntries);
 filterClientSelect.addEventListener("change", () => {
   populateFilterProjects();
   renderEntries();
@@ -40,22 +58,33 @@ async function loadEditEntryData() {
   setEditEntryStatus("Loading entries...");
 
   try {
-    const [clientsResponse, entriesResponse] = await Promise.all([
+    const [settingsResponse, clientsResponse, entriesResponse, usersResponse] = await Promise.all([
+      fetch("/api/settings", { cache: "no-store" }),
       fetch("/api/client-projects", { cache: "no-store" }),
       fetch("/api/time-entries", { cache: "no-store" }),
+      fetch("/api/users", { cache: "no-store" }),
     ]);
 
     if (!clientsResponse.ok) {
       throw new Error(`Could not load client data: ${clientsResponse.status}`);
     }
 
+    editSettings = settingsResponse.ok
+      ? normalizeSettings(await settingsResponse.json())
+      : normalizeSettings({});
     editClients = normalizeClients(await clientsResponse.json());
     timeEntries = entriesResponse.ok
       ? normalizeTimeEntries(await entriesResponse.json())
       : [];
+    editUsers = usersResponse.ok
+      ? normalizeUsers(await usersResponse.json())
+      : [];
 
     populateClientOptions(filterClientSelect, "All clients");
     populateClientOptions(editEntryClientSelect, "Select a client");
+    populateUserOptions();
+    setDefaultCustomDates();
+    updateFilterDateState();
     renderEntries();
     setEditEntryStatus("");
   } catch (error) {
@@ -132,7 +161,13 @@ function renderEntries() {
 }
 
 function getFilteredEntries() {
+  const selectedUsers = getSelectedUserIds();
+  const selectedDateRange = getSelectedDateRange();
+
   return timeEntries
+    .filter((entry) => matchesStatusFilter(entry))
+    .filter((entry) => isEntryInRange(entry, selectedDateRange))
+    .filter((entry) => selectedUsers.length === 0 || selectedUsers.includes(entry.userId))
     .filter((entry) => !filterClientSelect.value || matchesClient(entry, getClient(filterClientSelect.value)))
     .filter((entry) => !filterProjectSelect.value || matchesProject(entry, getProject(filterClientSelect.value, filterProjectSelect.value)))
     .sort((firstEntry, secondEntry) => secondEntry.endTime - firstEntry.endTime);
@@ -271,6 +306,137 @@ function normalizeTimeEntries(data) {
     : [];
 }
 
+function normalizeSettings(settings) {
+  return {
+    billingPeriod: normalizeBillingPeriod(settings?.billingPeriod),
+  };
+}
+
+function normalizeUsers(data) {
+  return Array.isArray(data?.users)
+    ? data.users.map((user) => ({
+        userId: String(user.user_id || "").trim(),
+        username: String(user.username || "").trim(),
+        userStatus: user.userStatus === "inactive" ? "inactive" : "active",
+      }))
+    : [];
+}
+
+function populateUserOptions() {
+  const usersById = new Map();
+
+  editUsers.forEach((user) => {
+    usersById.set(user.userId, user.username || user.userId);
+  });
+
+  timeEntries.forEach((entry) => {
+    if (entry.userId && !usersById.has(entry.userId)) {
+      usersById.set(entry.userId, entry.userId);
+    }
+  });
+
+  filterUsersSelect.replaceChildren();
+
+  [...usersById.entries()]
+    .sort((firstUser, secondUser) => firstUser[1].localeCompare(secondUser[1], undefined, {
+      sensitivity: "base",
+    }))
+    .forEach(([userId, label]) => {
+      filterUsersSelect.appendChild(createOption(userId, label));
+    });
+}
+
+function getSelectedUserIds() {
+  return [...filterUsersSelect.selectedOptions].map((option) => option.value);
+}
+
+function matchesStatusFilter(entry) {
+  return !filterStatusSelect.value || entry.invoiceStatus === filterStatusSelect.value;
+}
+
+function getSelectedDateRange() {
+  if (filterPeriodSelect.value === "all") {
+    return null;
+  }
+
+  if (filterPeriodSelect.value === "custom") {
+    return getCustomDateRange();
+  }
+
+  return getBillingPeriodRange(editSettings.billingPeriod, filterPeriodSelect.value);
+}
+
+function getCustomDateRange() {
+  const startDate = parseDateInput(filterStartDateInput.value);
+  const endDate = parseDateInput(filterEndDateInput.value);
+
+  if (!startDate || !endDate || startDate > endDate) {
+    return { invalid: true };
+  }
+
+  const exclusiveEndDate = new Date(endDate);
+  exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+  return { start: startDate, end: exclusiveEndDate };
+}
+
+function getBillingPeriodRange(period, mode) {
+  const today = new Date();
+  const normalizedPeriod = normalizeBillingPeriod(period);
+  let start;
+
+  if (normalizedPeriod.type === "custom") {
+    start = getCurrentCustomPeriodStart(today, normalizedPeriod.startDay);
+  } else {
+    start = new Date(today.getFullYear(), today.getMonth(), 1);
+  }
+
+  if (mode === "last") {
+    start = addMonths(start, -1);
+  }
+
+  return {
+    start,
+    end: addMonths(start, 1),
+  };
+}
+
+function getCurrentCustomPeriodStart(date, startDay) {
+  const currentMonthStart = new Date(date.getFullYear(), date.getMonth(), startDay);
+
+  if (date >= currentMonthStart) {
+    return currentMonthStart;
+  }
+
+  return new Date(date.getFullYear(), date.getMonth() - 1, startDay);
+}
+
+function addMonths(date, monthCount) {
+  return new Date(date.getFullYear(), date.getMonth() + monthCount, date.getDate());
+}
+
+function isEntryInRange(entry, range) {
+  if (range?.invalid) {
+    return false;
+  }
+
+  return Boolean(
+    !range ||
+    (Number.isFinite(entry.endTime.getTime()) &&
+      entry.endTime >= range.start &&
+      entry.endTime < range.end)
+  );
+}
+
+function normalizeBillingPeriod(period) {
+  const type = period?.type === "custom" ? "custom" : "calendarMonth";
+  const startDay = Math.min(28, Math.max(1, Number.parseInt(period?.startDay, 10) || 1));
+
+  return {
+    type,
+    startDay: type === "custom" ? startDay : 1,
+  };
+}
+
 function getClient(clientId) {
   return editClients.find((client) => client.id === clientId);
 }
@@ -307,6 +473,17 @@ function createLocalDateTime(dateValue, timeValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
   const [hours, minutes] = timeValue.split(":").map(Number);
   const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function parseDateInput(value) {
+  if (!value) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
 
   return Number.isFinite(date.getTime()) ? date : null;
 }
@@ -349,6 +526,19 @@ function formatTimeInput(date) {
     String(date.getHours()).padStart(2, "0"),
     String(date.getMinutes()).padStart(2, "0"),
   ].join(":");
+}
+
+function setDefaultCustomDates() {
+  const today = new Date();
+  filterStartDateInput.value = formatDateInput(new Date(today.getFullYear(), today.getMonth(), 1));
+  filterEndDateInput.value = formatDateInput(today);
+}
+
+function updateFilterDateState() {
+  const isCustom = filterPeriodSelect.value === "custom";
+  filterCustomDates.hidden = !isCustom;
+  filterStartDateInput.disabled = !isCustom;
+  filterEndDateInput.disabled = !isCustom;
 }
 
 function flashSavedButton() {

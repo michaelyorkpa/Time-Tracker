@@ -17,20 +17,10 @@
   document.documentElement.style.colorScheme = theme;
 
   function normalizeThemeMode(value) {
-    return ["light", "dark", "auto"].includes(value) ? value : "light";
+    return value === "dark" ? "dark" : "light";
   }
 
   function resolveThemeMode(value) {
-    if (value !== "auto") {
-      return value;
-    }
-
-    return isAfterSundown(new Date()) ? "dark" : "light";
-  }
-
-  function isAfterSundown(date) {
-    const hour = date.getHours();
-
-    return hour >= 18 || hour < 6;
+    return normalizeThemeMode(value);
   }
 })();

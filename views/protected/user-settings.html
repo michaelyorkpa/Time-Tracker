@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>User Settings | Longtail Forge</title>
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="css/longtail-forge.css?v=5">
+    <link rel="stylesheet" href="css/longtail-forge.css?v=6">
   </head>
   <body data-page-title="User Settings">
     <main class="settings-page">
@@ -15,20 +15,12 @@
         <fieldset class="settings-fieldset">
           <legend>Appearance</legend>
 
-          <div class="theme-mode-control" role="radiogroup" aria-label="Color mode">
-            <label>
-              <input type="radio" name="themeMode" value="light" data-theme-mode-option checked>
-              <span>Light</span>
-            </label>
-            <label>
-              <input type="radio" name="themeMode" value="dark" data-theme-mode-option>
-              <span>Dark</span>
-            </label>
-            <label>
-              <input type="radio" name="themeMode" value="auto" data-theme-mode-option>
-              <span>Auto</span>
-            </label>
-          </div>
+          <label class="theme-mode-switch">
+            <span>Light</span>
+            <input type="checkbox" data-theme-mode-toggle>
+            <span class="theme-switch-track" aria-hidden="true"></span>
+            <span>Dark</span>
+          </label>
         </fieldset>
       </form>
 

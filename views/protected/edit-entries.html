@@ -13,6 +13,38 @@
 
       <section class="entry-filters" aria-label="Entry filters">
         <label>
+          Entry Status
+          <select data-edit-filter-status>
+            <option value="">All statuses</option>
+            <option value="unbilled">Unbilled</option>
+            <option value="billed">Billed</option>
+            <option value="paid">Paid</option>
+          </select>
+        </label>
+
+        <label class="report-period-control">
+          Dates
+          <select data-edit-filter-period>
+            <option value="current">Current billing period</option>
+            <option value="last">Last billing period</option>
+            <option value="custom">Custom</option>
+            <option value="all">All dates</option>
+          </select>
+        </label>
+
+        <div class="report-custom-dates" data-edit-filter-custom-dates hidden>
+          <label>
+            Start Date
+            <input type="date" data-edit-filter-start-date disabled>
+          </label>
+
+          <label>
+            End Date
+            <input type="date" data-edit-filter-end-date disabled>
+          </label>
+        </div>
+
+        <label>
           Client
           <select data-edit-filter-client>
             <option value="">All clients</option>
@@ -24,6 +56,11 @@
           <select data-edit-filter-project disabled>
             <option value="">All projects</option>
           </select>
+        </label>
+
+        <label>
+          Users
+          <select data-edit-filter-users multiple></select>
         </label>
       </section>
 

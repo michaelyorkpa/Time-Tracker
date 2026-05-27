@@ -150,14 +150,10 @@ function renderReport() {
     }
 
     const projectRounding = getEffectiveProjectBillingRounding(client, project);
-    const isBillableProject = getEffectiveProjectBillable(client, project);
-    const displaySeconds = isBillableProject
-      ? projectSeconds
+    const roundedBillableSeconds = roundSeconds(projectBillableSeconds, projectRounding);
+    const displaySeconds = projectBillableSeconds > 0
+      ? roundedBillableSeconds
       : roundSeconds(projectSeconds, projectRounding);
-    const roundedBillableSeconds = roundSeconds(
-      isBillableProject ? projectBillableSeconds : 0,
-      projectRounding,
-    );
     const rate = getProjectBillingRate(client, project);
     const billableAmount = (roundedBillableSeconds / 3600) * rate;
 
@@ -363,10 +359,6 @@ function getEffectiveClientBillingRounding(client) {
 
 function getEffectiveProjectBillingRounding(client, project) {
   return project.billingRounding || getEffectiveClientBillingRounding(client);
-}
-
-function getEffectiveProjectBillable(client, project) {
-  return normalizeBillableFlag(project.billable, client.billable) === "yes";
 }
 
 function matchesClient(entry, client) {

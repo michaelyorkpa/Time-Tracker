@@ -174,8 +174,9 @@ function getSelectedProject(client) {
 }
 
 function updateBillableDefault() {
-  const project = getSelectedProject(getSelectedClient());
-  entryBillableSelect.value = project?.billable === "no" ? "no" : "yes";
+  const client = getSelectedClient();
+  const project = getSelectedProject(client);
+  entryBillableSelect.value = normalizeBillableFlag(project?.billable, client?.billable);
 }
 
 function normalizeBillableFlag(value, fallback = "yes") {

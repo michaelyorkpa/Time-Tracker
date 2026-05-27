@@ -32,7 +32,7 @@ function normalizeProtectedUserFlag(value) {
 }
 
 function normalizeThemeMode(value) {
-  return ["light", "dark", "auto"].includes(value) ? value : "light";
+  return value === "dark" ? "dark" : "light";
 }
 
 function userRowToAppValue(row) {

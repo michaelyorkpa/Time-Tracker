@@ -402,48 +402,50 @@ h1 {
     font-weight: 700;
 }
 
-.theme-mode-control {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--color-border-strong);
-    border-radius: 8px;
-    background: var(--color-hover);
-}
-
-.theme-mode-control label {
-    min-height: 36px;
+.theme-mode-switch {
+    width: fit-content;
+    min-height: 40px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0;
-    border-radius: 6px;
-    color: var(--color-text-secondary);
+    gap: 10px;
+    color: var(--color-text);
     cursor: pointer;
 }
 
-.theme-mode-control input {
+.theme-mode-switch input {
     position: absolute;
     opacity: 0;
     pointer-events: none;
 }
 
-.theme-mode-control span {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    border-radius: 6px;
-    text-align: center;
+.theme-switch-track {
+    width: 52px;
+    height: 28px;
+    position: relative;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    background: var(--color-hover);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
-.theme-mode-control input:checked + span {
+.theme-switch-track::after {
+    content: "";
+    width: 22px;
+    height: 22px;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    border-radius: 50%;
     background: var(--color-surface);
-    color: var(--color-text);
     box-shadow: var(--shadow-control);
+    transition: transform 0.16s ease;
 }
 
-.theme-mode-control input:focus-visible + span {
+.theme-mode-switch input:checked + .theme-switch-track::after {
+    transform: translateX(24px);
+}
+
+.theme-mode-switch input:focus-visible + .theme-switch-track {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
 }
@@ -495,7 +497,7 @@ button.danger-button {
 
 /* Dashboard */
 .reporting-page {
-    width: min(94vw, 920px);
+    width: min(94vw, 1120px);
     text-align: left;
 }
 
@@ -627,9 +629,13 @@ button.danger-button {
 
 .entry-filters {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     margin-bottom: 16px;
+}
+
+.entry-filters select[multiple] {
+    min-height: 112px;
 }
 
 .entry-edit-form {

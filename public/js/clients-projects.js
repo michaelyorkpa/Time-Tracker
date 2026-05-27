@@ -399,8 +399,8 @@ function createClientBillingSettingsEditor(client, options = {}) {
 
     client.billing_rate = normalizeBillingRate(billingRateInput.value);
     client.billing_period = billingPeriodEditor.getValue();
-    client.billing_rounding = billingRoundingEditor.getValue();
     client.billable = normalizeBillableFlag(billableInput.checked);
+    client.billing_rounding = billingRoundingEditor.getValue();
 
     await saveClientProjectData({
       action: "client_billing_settings_updated",
@@ -438,12 +438,21 @@ async function saveClientSettings(client, container, options = {}) {
   });
 
   if (billingRateInput && billableInput) {
+    const billingPeriodEditor = container.querySelector("[data-billing-period-editor]")
+      ?.billingPeriodEditor;
+    const billingRoundingEditor = container.querySelector("[data-billing-rounding-editor]")
+      ?.billingRoundingEditor;
+
     client.billing_rate = normalizeBillingRate(billingRateInput.value);
     client.billable = normalizeBillableFlag(billableInput.checked);
-    client.billing_period = container.querySelector("[data-billing-period-editor]")
-      ?.billingPeriodEditor?.getValue() ?? client.billing_period;
-    client.billing_rounding = container.querySelector("[data-billing-rounding-editor]")
-      ?.billingRoundingEditor?.getValue() ?? client.billing_rounding;
+
+    if (billingPeriodEditor) {
+      client.billing_period = billingPeriodEditor.getValue();
+    }
+
+    if (billingRoundingEditor) {
+      client.billing_rounding = billingRoundingEditor.getValue();
+    }
   }
 
   const action = options.action || "client_settings_updated";
@@ -1110,6 +1119,10 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
     ? modeSelect.value
     : (roundHoursInput.checked ? "round" : "exact");
 
+  const syncModeFromRoundHours = () => {
+    modeSelect.value = roundHoursInput.checked ? "round" : "exact";
+  };
+
   const updateState = () => {
     const selectedMode = getSelectedMode();
     modeLabel.hidden = !isBillableMode;
@@ -1122,7 +1135,10 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
   };
 
   modeSelect.addEventListener("change", updateState);
-  roundHoursInput.addEventListener("change", updateState);
+  roundHoursInput.addEventListener("change", () => {
+    syncModeFromRoundHours();
+    updateState();
+  });
   updateState();
 
   fieldset.append(legendElement, roundHoursLabel, modeLabel, incrementLabel, inheritedHint);
@@ -1134,11 +1150,16 @@ function createBillingRoundingEditor({ legend, inheritLabel, value, inheritedRou
     },
     setBillableMode(isBillable) {
       isBillableMode = Boolean(isBillable);
+
+      if (!isBillableMode) {
+        syncModeFromRoundHours();
+      }
+
       fieldset.disabled = false;
       updateState();
     },
     getValue() {
-      const selectedMode = getSelectedMode();
+      const selectedMode = modeSelect.value;
 
       if (selectedMode === "inherit") {
         return null;
