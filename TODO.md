@@ -5,23 +5,65 @@ This is a place for me to jot down fixes and a "Wishlist" for things I'd like to
 ## Fixes
 
 - [x] Edit entries screen needs to have a duration editing box, not just a start & end time - Added in Version 0.22.5
+- [ ] Edit entries screen displays full UUID when one is selected for editing; need a friendly name for that
 
 ## Tweaks
 
 - [ ] Add table of contents to top of README.md
 - [ ] Put astericks next to required fields in forms
+- [ ] Add timezone to Organization and Client settings
+- [ ] Add timezone to User settings
+- [ ] Store all dates as UTC
 
 # Medium Term
 
 - [ ] Start developing administration documentation
 
-# Long Term
+- [ ] Add geolocation settings
+
+- [ ] Make UI "nicer" looking (also, fix the awful colors on the dark mode)
+
+- [ ] Add toast and notification system
+    - [ ] Warn about running timers (once DB timer persistence exists)
+    - Eventually:
+    - [ ] Task notifications
+    - [ ] Task reminders
+    - [ ] Future integrations (Slack, Discord, Teams, etc.)
+
+- [ ] Auto-create a client with the organization name for internal needs/tasks during setup, but allow this to be selectable
+    - Should be marked as non-billable by default
+    - [ ] Auto-create some template projects (selectable)
+        - Administrative work
+        - Sales/prospecting
+        - Bookkeeping
+        - Internal Maintenance
+        - Website work
+        - Tooling/dev work
+        - Agency notes
+        - Internal SOPs
+
+## Team tools
+
+- [ ] Create group/team permissions
+    - Allow org, client, and project admins to create groups, assign permissions, and add/remove users
+    - This will simplify administrative overhead of permission granting while adding users to clients/projects
+
+- What other team tools would be beneficial?
 
 ## Module-ize the different components
 
 - [ ] Make time-tracking/billing/invoicing its own module that can be installed independently during setup
 - [ ] Make notes/knowledge base its own module
 - [ ] Make support tickets its own module
+
+# Long Term
+
+- [ ] Personal edition
+    - 
+
+- [ ] Family edition
+    - 
+
 
 ## Dashboard Tweaks
 
@@ -31,9 +73,49 @@ This is a place for me to jot down fixes and a "Wishlist" for things I'd like to
     - Initial dashboard should be the organization dashboard with Activity Feed/To Do/Tickets
         - Should also include Organization Knowledge Base
 
+## Search
+
+- [ ] Possibly build a search engine with elastic search or something else that does fast, full text searching
+
 ## Tasks
 
-### Phase 1 - 
+### Phase 1 - Basic tasks
+
+- [ ] Task title
+- [ ] Task description
+- [ ] Organization link
+- [ ] Client link
+- [ ] Optional project link
+- [ ] Creator user ID
+- [ ] Status
+    - open
+    - in_progress
+    - blocked
+    - completed
+    - archived
+- [ ] Optional due date
+- [ ] Optional due time
+- [ ] Parent task ID
+    - Giving the task a parent task ID gives the parent task a progress bar
+    - Task progress bars can be turned off in the parent task's details or project/client/org-wide
+    - Prevent loops by disallowing tasks to become a child of themselves or descendants
+- [ ] Sort order
+- [ ] Tags
+- [ ] Basic recurrence fields
+    - [ ] recurrence_enabled
+    - [ ] recurrence_rule
+    - [ ] recurrence_anchor_date
+    - [ ] recurrence_next_due_at
+    - [ ] recurrence_end_date
+    - [ ] recurrence_task_template_id
+
+### Phase 2 - Task Expansion
+
+- [ ] Create join table for potential multiple person task assignment
+- [ ] Add reminders (in addition to showing up on the app calendar/notifications)
+- [ ] Recurrence task templates (separate table)
+    - This will create a template of the original task, keeping the original task intact
+    - Templates create a new standard task once a task is completed
 
 ## Knowledge Base/Notes
 
@@ -121,25 +203,46 @@ Only after public API/auth/scopes are in good shape:
 - [ ] Sync by API key
 - [ ] Optional embeddable widgets
 
+## Support Tickets
+
+- [ ] Research what's really needed for support tickets
+
+- [ ] Include some sort of CAPTCHA for public-facing forms
+
 ## Integrations
 
 - [ ] Create public-facing APIs with keys to allow the app to be integrated with existing solutions
 - [ ] Google Calendar
+    - For scheduling tasks
 - [ ] Outlook Calendar
+    - For scheduling tasks
 - [ ] ZenDesk (?)
     - Definitely should have an import from ZenDesk
 - [ ] Google Tasks
     - Need an import
+    - Possible syncing??
 - [ ] Micrsoft To Do
     - Need an import
+    - Possible syncing??
 - [ ] Microsoft SharePoint (?)
-- [ ] WordPress
+- [ ] WordPress/WooCommerce
     - [ ] Support Ticket plugin
         - Support tickets would need a form for the front end
     - [ ] Knowledge Base plugin
+        - Product support and information
 - [ ] Shopify
-    - [ ] Knowledge Base plugin
-    - [ ] Support ticket plugin
-        - Support tickets would need a form for the front end    
+    - Same as WordPress
+- [ ] Big Commerce
+    - Same as WordPress
+- [ ] Magento
+    - Same as WordPress
 - [ ] Slack
+    - Task reminders
+    - Support ticket Notifications
 - [ ] Discord
+    - Same as Slack
+- [ ] Microsoft Teams
+    - Same as Slack
+- [ ] Quickbooks
+    - For bringing in invoice details
+- [ ] Other accounting software

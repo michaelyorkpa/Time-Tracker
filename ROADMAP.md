@@ -476,9 +476,6 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
   - [ ] Pretty-print `metadata_json`
   - [ ] Collapse/expand large JSON objects
   - [ ] Show empty/null JSON fields as “None”
-
-## Version 0.23.3.1 - Admin Audit Log Viewer Refinements
-
 - [ ] Clicking on a user in the column view filters by user automatically
 - [ ] Clicking on a record in the modal view takes admin to edit page for that record
 - [ ] Full audit log export (CSV?)
