@@ -296,55 +296,55 @@ This file is the detailed per-version changelog and forward plan for Longtail Fo
 
 ## Version 0.23.0 - Client and Project CRUD Foundation
 
-- [ ] Replace whole-tree client/project saves with granular CRUD
+- [x] Replace whole-tree client/project saves with granular CRUD
   - Current risk:
     - The current client/project save path deletes and reinserts all clients/projects for an organization
     - That is acceptable for early app data, but it becomes dangerous once tasks, notes, tickets, roles, audit logs, API integrations, and external references point at client/project IDs
   - Goal:
-    - Client and project records should be created, updated, archived/deactivated, and deleted individually
-    - Existing IDs must be preserved
-    - Saving one project must not rewrite unrelated clients/projects
-- [ ] Add granular client endpoints
-  - [ ] `GET /api/clients`
-  - [ ] `POST /api/clients`
-  - [ ] `GET /api/clients/:clientId`
-  - [ ] `PUT /api/clients/:clientId`
-  - [ ] `DELETE /api/clients/:clientId` or archive/deactivate equivalent
-- [ ] Add granular project endpoints
-  - [ ] `GET /api/projects`
-  - [ ] `GET /api/clients/:clientId/projects`
-  - [ ] `POST /api/clients/:clientId/projects`
-  - [ ] `GET /api/projects/:projectId`
-  - [ ] `PUT /api/projects/:projectId`
-  - [ ] `DELETE /api/projects/:projectId` or archive/deactivate equivalent
-- [ ] Keep `GET /api/client-projects` as a compatibility/read endpoint for screens that still need the nested client/project tree
-- [ ] Retire or restrict `PUT /api/client-projects`
-  - [ ] Do not allow it to delete and reinsert all clients/projects long term
-  - [ ] If temporarily retained for compatibility, document it as deprecated
-  - [ ] Make sure it cannot break task/note/ticket/role references once those exist
-- [ ] Add repository methods instead of replace-all methods
-  - [ ] `clientsRepository.create()`
-  - [ ] `clientsRepository.update()`
-  - [ ] `clientsRepository.archive()` or `clientsRepository.delete()`
-  - [ ] `projectsRepository.create()`
-  - [ ] `projectsRepository.update()`
-  - [ ] `projectsRepository.archive()` or `projectsRepository.delete()`
-- [ ] Prefer archive/deactivate over hard delete for clients and projects
-  - [ ] Add `archived_at`, `deleted_at`, or consistent `status` behavior if needed
-  - [ ] Preserve old clients/projects for historic time entries, audit logs, notes, tickets, and tasks
-- [ ] Add or verify database constraints and indexes
-  - [ ] Clients remain scoped by `organization_id`
-  - [ ] Projects remain scoped by `organization_id` and linked to clients
-  - [ ] Add indexes for common lookups by organization, client, status, and updated date
-- [ ] Update client/project admin UI to use granular endpoints
-  - [ ] Creating a client calls the client create endpoint
-  - [ ] Editing a client calls the client update endpoint
-  - [ ] Creating a project calls the project create endpoint
-  - [ ] Editing a project calls the project update endpoint
-  - [ ] Archiving/deleting a client or project affects only that one record
-- [ ] Preserve denormalized time-entry names for historical reporting, but keep IDs stable
-  - [ ] Time entries may continue storing `client_name` and `project_name` as historical display values
-  - [ ] Future joins and links should rely on stable `client_id` and `project_id`
+    - [x] Client and project records should be created, updated, archived/deactivated, and deleted individually
+    - [x] Existing IDs must be preserved
+    - [x] Saving one project must not rewrite unrelated clients/projects
+- [x] Add granular client endpoints
+  - [x] `GET /api/clients`
+  - [x] `POST /api/clients`
+  - [x] `GET /api/clients/:clientId`
+  - [x] `PUT /api/clients/:clientId`
+  - [x] `DELETE /api/clients/:clientId` archive/deactivate equivalent
+- [x] Add granular project endpoints
+  - [x] `GET /api/projects`
+  - [x] `GET /api/clients/:clientId/projects`
+  - [x] `POST /api/clients/:clientId/projects`
+  - [x] `GET /api/projects/:projectId`
+  - [x] `PUT /api/projects/:projectId`
+  - [x] `DELETE /api/projects/:projectId` archive/deactivate equivalent
+- [x] Keep `GET /api/client-projects` as a compatibility/read endpoint for screens that still need the nested client/project tree
+- [x] Retire or restrict `PUT /api/client-projects`
+  - [x] Do not allow it to delete and reinsert all clients/projects long term
+  - [x] If temporarily retained for compatibility, document it as deprecated
+  - [x] Make sure it cannot break task/note/ticket/role references once those exist
+- [x] Add repository methods instead of replace-all methods
+  - [x] `clientsRepository.create()`
+  - [x] `clientsRepository.update()`
+  - [x] `clientsRepository.archive()` or `clientsRepository.delete()`
+  - [x] `projectsRepository.create()`
+  - [x] `projectsRepository.update()`
+  - [x] `projectsRepository.archive()` or `projectsRepository.delete()`
+- [x] Prefer archive/deactivate over hard delete for clients and projects
+  - [x] Add `archived_at`, `deleted_at`, or consistent `status` behavior if needed
+  - [x] Preserve old clients/projects for historic time entries, audit logs, notes, tickets, and tasks
+- [x] Add or verify database constraints and indexes
+  - [x] Clients remain scoped by `organization_id`
+  - [x] Projects remain scoped by `organization_id` and linked to clients
+  - [x] Add indexes for common lookups by organization, client, status, and updated date
+- [x] Update client/project admin UI to use granular endpoints
+  - [x] Creating a client calls the client create endpoint
+  - [x] Editing a client calls the client update endpoint
+  - [x] Creating a project calls the project create endpoint
+  - [x] Editing a project calls the project update endpoint
+  - [x] Archiving/deleting a client or project affects only that one record
+- [x] Preserve denormalized time-entry names for historical reporting, but keep IDs stable
+  - [x] Time entries may continue storing `client_name` and `project_name` as historical display values
+  - [x] Future joins and links should rely on stable `client_id` and `project_id`
 
 ## Version 0.23.1 - Database Audit Logging
 

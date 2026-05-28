@@ -1,30 +1,19 @@
+import { randomUUID } from "node:crypto";
 import { clientsRepository } from "../repositories/clients.repo.js";
 import { projectsRepository } from "../repositories/projects.repo.js";
 import { appendAppLog } from "../utils/app-log.js";
+import { AppError } from "../utils/app-error.js";
 import { normalizeClientProjectData } from "../utils/normalizers.js";
 
 async function readClientProjects(session) {
   return readClientProjectData(session.organization_id);
 }
 
-async function saveClientProjects(payload, session) {
-  const data = normalizeClientProjectData(payload.data);
-  const actions = Array.isArray(payload.actions) ? payload.actions : [];
-
-  await saveClientProjectData(data, session.organization_id);
-
-  if (actions.length === 0) {
-    await appendAppLog({
-      action: "client_project_file_saved",
-      details: "No action details provided",
-    });
-  } else {
-    for (const action of actions) {
-      await appendAppLog(action);
-    }
-  }
-
-  return { data };
+async function saveClientProjects() {
+  throw new AppError(
+    "Whole-tree client/project saves are deprecated. Use granular client and project endpoints.",
+    410,
+  );
 }
 
 async function readClientProjectData(organizationId) {
@@ -50,13 +39,246 @@ async function readClientProjectData(organizationId) {
   });
 }
 
-async function saveClientProjectData(data, organizationId) {
-  const normalizedData = normalizeClientProjectData(data);
+async function listClients(session) {
+  return { clients: await clientsRepository.readAll(session.organization_id) };
+}
 
-  await clientsRepository.replaceAll(organizationId, normalizedData.clients);
+async function readClient(clientId, session) {
+  const decodedClientId = decodeURIComponent(clientId || "");
+  const client = await clientsRepository.readById(session.organization_id, decodedClientId);
+
+  if (!decodedClientId || !client) {
+    throw new AppError("Client not found", 404);
+  }
+
+  return { client };
+}
+
+async function createClient(payload, session) {
+  const client = normalizeClientPayload(payload, { id: payload?.id || randomUUID() });
+
+  await clientsRepository.create(session.organization_id, client);
+  await logAction(payload?.action, {
+    action: "client_created",
+    client_id: client.id,
+    client_name: client.name,
+    details: `status=${client.status};billable=${client.billable};billing_rate=${client.billing_rate}`,
+  });
+
+  return { client };
+}
+
+async function updateClient(clientId, payload, session) {
+  const decodedClientId = decodeURIComponent(clientId || "");
+  const previousClient = await clientsRepository.readById(session.organization_id, decodedClientId);
+
+  if (!decodedClientId || !previousClient) {
+    throw new AppError("Client not found", 404);
+  }
+
+  const client = normalizeClientPayload(payload, {
+    ...previousClient,
+    id: decodedClientId,
+  });
+
+  await clientsRepository.update(session.organization_id, client);
+  await logAction(payload?.action, {
+    action: "client_updated",
+    client_id: client.id,
+    client_name: client.name,
+    details: `old_client_name=${previousClient.name};old_status=${previousClient.status};new_status=${client.status};billable=${client.billable};billing_rate=${client.billing_rate}`,
+  });
+
+  return { client };
+}
+
+async function archiveClient(clientId, payload, session) {
+  const decodedClientId = decodeURIComponent(clientId || "");
+  const previousClient = await clientsRepository.readById(session.organization_id, decodedClientId);
+
+  if (!decodedClientId || !previousClient) {
+    throw new AppError("Client not found", 404);
+  }
+
+  await clientsRepository.archive(session.organization_id, decodedClientId);
+  await logAction(payload?.action, {
+    action: "client_archived",
+    client_id: previousClient.id,
+    client_name: previousClient.name,
+    details: `old_status=${previousClient.status};new_status=Inactive`,
+  });
+
+  return { client_id: decodedClientId, archived: true };
+}
+
+async function listProjects(session) {
+  return { projects: await projectsRepository.readAll(session.organization_id) };
+}
+
+async function listClientProjects(clientId, session) {
+  const decodedClientId = decodeURIComponent(clientId || "");
+  const client = await clientsRepository.readById(session.organization_id, decodedClientId);
+
+  if (!decodedClientId || !client) {
+    throw new AppError("Client not found", 404);
+  }
+
+  return {
+    client,
+    projects: await projectsRepository.readByClientId(session.organization_id, decodedClientId),
+  };
+}
+
+async function readProject(projectId, session) {
+  const decodedProjectId = decodeURIComponent(projectId || "");
+  const project = await projectsRepository.readById(session.organization_id, decodedProjectId);
+
+  if (!decodedProjectId || !project) {
+    throw new AppError("Project not found", 404);
+  }
+
+  return { project };
+}
+
+async function createProject(clientId, payload, session) {
+  const decodedClientId = decodeURIComponent(clientId || "");
+  const client = await clientsRepository.readById(session.organization_id, decodedClientId);
+
+  if (!decodedClientId || !client) {
+    throw new AppError("Client not found", 404);
+  }
+
+  const project = normalizeProjectPayload(payload, {
+    id: payload?.id || randomUUID(),
+    client_id: decodedClientId,
+  }, client.billable);
+
+  await projectsRepository.create(session.organization_id, decodedClientId, project);
+  await logAction(payload?.action, {
+    action: "project_created",
+    client_id: client.id,
+    client_name: client.name,
+    project_id: project.id,
+    project_name: project.name,
+    details: `status=${project.status};billable=${project.billable};billing_rate=${project.billing_rate}`,
+  });
+
+  return { project };
+}
+
+async function updateProject(projectId, payload, session) {
+  const decodedProjectId = decodeURIComponent(projectId || "");
+  const previousProject = await projectsRepository.readById(session.organization_id, decodedProjectId);
+
+  if (!decodedProjectId || !previousProject) {
+    throw new AppError("Project not found", 404);
+  }
+
+  const clientId = payload?.client_id || previousProject.client_id;
+  const client = await clientsRepository.readById(session.organization_id, clientId);
+
+  if (!client) {
+    throw new AppError("Client not found", 404);
+  }
+
+  const project = normalizeProjectPayload(payload, {
+    ...previousProject,
+    id: decodedProjectId,
+    client_id: client.id,
+  }, client.billable);
+
+  await projectsRepository.update(session.organization_id, project);
+  await logAction(payload?.action, {
+    action: "project_updated",
+    client_id: client.id,
+    client_name: client.name,
+    project_id: project.id,
+    project_name: project.name,
+    details: `old_project_name=${previousProject.name};old_status=${previousProject.status};new_status=${project.status};old_billable=${previousProject.billable};new_billable=${project.billable};billing_rate=${project.billing_rate}`,
+  });
+
+  return { project };
+}
+
+async function archiveProject(projectId, payload, session) {
+  const decodedProjectId = decodeURIComponent(projectId || "");
+  const previousProject = await projectsRepository.readById(session.organization_id, decodedProjectId);
+
+  if (!decodedProjectId || !previousProject) {
+    throw new AppError("Project not found", 404);
+  }
+
+  const client = await clientsRepository.readById(session.organization_id, previousProject.client_id);
+
+  await projectsRepository.archive(session.organization_id, decodedProjectId);
+  await logAction(payload?.action, {
+    action: "project_archived",
+    client_id: previousProject.client_id,
+    client_name: client?.name || "",
+    project_id: previousProject.id,
+    project_name: previousProject.name,
+    details: `old_status=${previousProject.status};new_status=Inactive`,
+  });
+
+  return { project_id: decodedProjectId, archived: true };
+}
+
+function normalizeClientPayload(payload, fallback = {}) {
+  const normalized = normalizeClientProjectData({
+    clients: [{
+      ...fallback,
+      ...payload,
+      projects: [],
+    }],
+  }).clients[0];
+
+  if (!normalized.id || !normalized.name) {
+    throw new AppError("Client id and name are required", 400);
+  }
+
+  return normalized;
+}
+
+function normalizeProjectPayload(payload, fallback = {}, fallbackBillable = "yes") {
+  const normalizedData = normalizeClientProjectData({
+    clients: [{
+      id: "client",
+      name: "Client",
+      billable: fallbackBillable,
+      projects: [{
+        ...fallback,
+        ...payload,
+      }],
+    }],
+  });
+  const project = normalizedData.clients[0].projects[0];
+
+  if (!project.id || !project.name) {
+    throw new AppError("Project id and name are required", 400);
+  }
+
+  return {
+    ...project,
+    client_id: fallback.client_id,
+  };
+}
+
+async function logAction(providedAction, fallbackAction) {
+  await appendAppLog(providedAction || fallbackAction);
 }
 
 export const clientsService = {
+  archiveClient,
+  archiveProject,
+  createClient,
+  createProject,
+  listClientProjects,
+  listClients,
+  listProjects,
+  readClient,
   readClientProjects,
+  readProject,
   saveClientProjects,
+  updateClient,
+  updateProject,
 };

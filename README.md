@@ -44,6 +44,7 @@ The detailed per-version changelog and future plan live in [ROADMAP.md](ROADMAP.
 - `0.20.x` modernized the server around Express, repositories, migrations, services, central error handling, and public assets.
 - `0.21.x` finishes the legacy refactor and begins app version/footer and front-end organization cleanup.
 - `0.22.x` focuses on logging, reporting, edit-entry polish, timer-state refinements, and frontend utility groundwork.
+- `0.23.x` starts the database-tooling foundation with granular client/project CRUD and audit-log groundwork.
 - `0.30+` expands toward roles, tasks, notes, calendars, production packaging, personal use, and SaaS capabilities.
 
 ## Getting Started

@@ -45,6 +45,94 @@ ORDER BY name;
   return rows.map(clientRowToAppClient);
 }
 
+async function readById(organizationId, clientId) {
+  const rows = await querySql(`
+SELECT
+  id,
+  name,
+  status,
+  billable,
+  billing_rate,
+  billing_period_type,
+  billing_period_start_day,
+  billing_rounding_enabled,
+  billing_rounding_increment,
+  billing_contact_name,
+  billing_contact_email,
+  billing_contact_alternate_name,
+  billing_contact_alternate_email,
+  billing_contact_phone_number,
+  billing_contact_alternate_phone_number,
+  billing_contact_street_address_1,
+  billing_contact_street_address_2,
+  billing_contact_city,
+  billing_contact_state,
+  billing_contact_zip_code
+FROM clients
+WHERE organization_id = ${sqlText(organizationId)}
+  AND id = ${sqlText(clientId)}
+LIMIT 1;
+`);
+
+  return rows[0] ? clientRowToAppClient(rows[0]) : null;
+}
+
+async function create(organizationId, client) {
+  const now = new Date().toISOString();
+  await runSql(createClientInsertSql(organizationId, client, now));
+}
+
+async function update(organizationId, client) {
+  const now = new Date().toISOString();
+  const contact = normalizeBillingContact(client.billing_contact);
+
+  await runSql(`
+UPDATE clients
+SET
+  name = ${sqlText(client.name)},
+  status = ${sqlText(client.status)},
+  billable = ${sqlText(client.billable)},
+  billing_rate = ${sqlNullableText(client.billing_rate)},
+  billing_period_type = ${sqlNullableText(client.billing_period?.type)},
+  billing_period_start_day = ${sqlNullableInteger(client.billing_period?.startDay)},
+  billing_rounding_enabled = ${sqlNullableInteger(client.billing_rounding ? (client.billing_rounding.enabled ? 1 : 0) : null)},
+  billing_rounding_increment = ${sqlNullableText(client.billing_rounding?.increment)},
+  billing_contact_name = ${sqlText(contact.name)},
+  billing_contact_email = ${sqlText(contact.email)},
+  billing_contact_alternate_name = ${sqlText(contact.alternate_name)},
+  billing_contact_alternate_email = ${sqlText(contact.alternate_email)},
+  billing_contact_phone_number = ${sqlText(contact.phone_number)},
+  billing_contact_alternate_phone_number = ${sqlText(contact.alternate_phone_number)},
+  billing_contact_street_address_1 = ${sqlText(contact.street_address_1)},
+  billing_contact_street_address_2 = ${sqlText(contact.street_address_2)},
+  billing_contact_city = ${sqlText(contact.city)},
+  billing_contact_state = ${sqlText(contact.state)},
+  billing_contact_zip_code = ${sqlText(contact.zip_code)},
+  updated_at = ${sqlText(now)}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND id = ${sqlText(client.id)};
+`);
+}
+
+async function archive(organizationId, clientId) {
+  const now = new Date().toISOString();
+
+  await runSql(`
+UPDATE clients
+SET status = 'Inactive',
+    updated_at = ${sqlText(now)}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND id = ${sqlText(clientId)};
+
+UPDATE projects
+SET status = 'Inactive',
+    updated_at = ${sqlText(now)}
+WHERE organization_id = ${sqlText(organizationId)}
+  AND client_id = ${sqlText(clientId)}
+  AND status != 'Completed';
+`);
+}
+
 async function replaceAll(organizationId, clients) {
   const now = new Date().toISOString();
   const statements = [
@@ -168,6 +256,10 @@ function billingRoundingRowToAppValue(row) {
 }
 
 export const clientsRepository = {
+  archive,
+  create,
   readAll,
+  readById,
   replaceAll,
+  update,
 };

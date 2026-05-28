@@ -1,3 +1,11 @@
+## Version 0.23.0
+
+- Added granular authenticated client and project CRUD endpoints.
+- Reworked client/project repository saves so one record can be created, updated, or archived without rewriting unrelated records.
+- Kept `GET /api/client-projects` as the nested compatibility read model while deprecating whole-tree `PUT /api/client-projects` saves.
+- Updated the client/project admin UI to use record-level client and project save endpoints.
+- Added client/project lookup indexes for organization, status, client, and updated-date queries.
+
 ## Version 0.22.5.2
 
 - Added shared plain-browser frontend helpers under `public/js/shared/` for API requests, modals, formatting, billing, and record matching.

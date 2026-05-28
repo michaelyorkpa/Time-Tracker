@@ -301,7 +301,7 @@ function createBillingContactEditor(client, options = {}) {
       client.billing_contact[fieldName] = inputs.get(fieldName).value.trim();
     });
 
-    await saveClientProjectData({
+    await saveClientRecord(client, {
       action: "client_billing_contact_updated",
       client_id: client.id,
       client_name: client.name,
@@ -405,7 +405,7 @@ function createClientBillingSettingsEditor(client, options = {}) {
     client.billable = normalizeBillableFlag(billableInput.checked);
     client.billing_rounding = billingRoundingEditor.getValue();
 
-    await saveClientProjectData({
+    await saveClientRecord(client, {
       action: "client_billing_settings_updated",
       client_id: client.id,
       client_name: client.name,
@@ -460,7 +460,7 @@ async function saveClientSettings(client, container, options = {}) {
 
   const action = options.action || "client_settings_updated";
 
-  return saveClientProjectData({
+  return saveClientRecord(client, {
     action,
     client_id: client.id,
     client_name: client.name,
@@ -620,7 +620,7 @@ function createProjectEditor(client, project) {
     project.billing_period = billingPeriodEditor.getValue();
     project.billing_rounding = billingRoundingEditor.getValue();
 
-    await saveClientProjectData({
+    await saveProjectRecord(project, {
       action: "project_updated",
       client_id: client.id,
       client_name: client.name,
@@ -635,13 +635,13 @@ function createProjectEditor(client, project) {
 
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
-  deleteButton.textContent = "Delete";
+  deleteButton.textContent = "Archive";
   deleteButton.className = "danger-button";
   deleteButton.addEventListener("click", async () => {
     const shouldDelete = await window.LongtailForge.modal.confirm({
-      title: "Delete project?",
-      message: `Delete project "${project.name}"?`,
-      confirmLabel: "Delete",
+      title: "Archive project?",
+      message: `Archive project "${project.name}"?`,
+      confirmLabel: "Archive",
       cancelLabel: "Cancel",
       danger: true,
     });
@@ -650,12 +650,8 @@ function createProjectEditor(client, project) {
       return;
     }
 
-    client.projects = client.projects.filter(
-      (currentProject) => currentProject.id !== project.id,
-    );
-
-    await saveClientProjectData({
-      action: "project_deleted",
+    await archiveProjectRecord(project, {
+      action: "project_archived",
       client_id: client.id,
       client_name: client.name,
       project_id: project.id,
@@ -773,7 +769,7 @@ function createAddProjectForm(client) {
 
     client.projects.push(project);
 
-    await saveClientProjectData({
+    await createProjectRecord(client, project, {
       action: "project_created",
       client_id: client.id,
       client_name: client.name,
@@ -828,7 +824,7 @@ async function addClient() {
 
   clientProjectData.clients.push(client);
 
-  const saved = await saveClientProjectData({
+  const saved = await createClientRecord(client, {
     action: "client_created",
     client_id: client.id,
     client_name: client.name,
@@ -845,19 +841,83 @@ async function addClient() {
   }
 }
 
-async function saveClientProjectData(action, viewState = {}) {
-  // The server persists the full normalized tree and records structured audit actions.
+async function createClientRecord(client, action, viewState = {}) {
+  return persistClientProjectChange(action, viewState, async () => {
+    const result = await window.LongtailForge.api.postJson("/api/clients", {
+      ...client,
+      action,
+    });
+
+    if (client.projects.length > 0) {
+      await window.LongtailForge.api.postJson(
+        `/api/clients/${encodeURIComponent(result.client.id)}/projects`,
+        {
+          ...client.projects[0],
+          action: {
+            action: "project_created",
+            client_id: client.id,
+            client_name: client.name,
+            project_id: client.projects[0].id,
+            project_name: client.projects[0].name,
+            details: action.details,
+          },
+        },
+      );
+    }
+  });
+}
+
+async function saveClientRecord(client, action, viewState = {}) {
+  return persistClientProjectChange(action, viewState, async () => {
+    await window.LongtailForge.api.putJson(
+      `/api/clients/${encodeURIComponent(client.id)}`,
+      {
+        ...client,
+        action,
+      },
+    );
+  });
+}
+
+async function createProjectRecord(client, project, action, viewState = {}) {
+  return persistClientProjectChange(action, viewState, async () => {
+    await window.LongtailForge.api.postJson(
+      `/api/clients/${encodeURIComponent(client.id)}/projects`,
+      {
+        ...project,
+        action,
+      },
+    );
+  });
+}
+
+async function saveProjectRecord(project, action, viewState = {}) {
+  return persistClientProjectChange(action, viewState, async () => {
+    await window.LongtailForge.api.putJson(
+      `/api/projects/${encodeURIComponent(project.id)}`,
+      {
+        ...project,
+        action,
+      },
+    );
+  });
+}
+
+async function archiveProjectRecord(project, action, viewState = {}) {
+  return persistClientProjectChange(action, viewState, async () => {
+    await window.LongtailForge.api.deleteJson(
+      `/api/projects/${encodeURIComponent(project.id)}`,
+    );
+  });
+}
+
+async function persistClientProjectChange(action, viewState = {}, request) {
+  // Mutations are record-level; the nested tree is refreshed only as a read model.
   setStatus("Saving clients and projects...");
 
   try {
-    const result = await window.LongtailForge.api.putJson(
-      "/api/client-projects",
-      {
-        data: clientProjectData,
-        actions: [action],
-      },
-    );
-    clientProjectData = normalizeData(result.data);
+    await request();
+    await refreshClientProjectData();
     openClientId = viewState.openClientId || action.client_id || "";
     openBillingClientId = viewState.openBillingClientId || "";
     openClientBillingSettingsId = viewState.openClientBillingSettingsId || "";
@@ -870,6 +930,14 @@ async function saveClientProjectData(action, viewState = {}) {
     console.error(error);
     return false;
   }
+}
+
+async function refreshClientProjectData() {
+  const result = await window.LongtailForge.api.getJson("/api/client-projects", {
+    cache: "no-store",
+  });
+
+  clientProjectData = normalizeData(result);
 }
 
 function flashSavedButton(selector) {
